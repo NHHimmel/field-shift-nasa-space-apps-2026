@@ -5,7 +5,7 @@ Field Shift: Multi-District 20-Year NASA Earth Observation Dataset & Cache Build
 Provides:
 1. Bulk multi-decade (e.g., 2005-2024, 20 years) daily agroclimatology fetching from
    the NASA POWER REST API across 8 core agricultural districts in Northwest Bangladesh.
-2. Automatic local CSV caching (`./nasa_cache/<farm_id>_<start>_<end>.csv`) so 20-year
+2. Automatic local CSV caching (`data/cache/<farm_id>_<start>_<end>.csv`) so 20-year
    daily datasets (~7,300 days x 16 features per district = ~58,400 daily records)
    are downloaded in a single HTTP request per district and reused instantaneously.
 3. Realistic agro-climatic generator fallback when offline, preserving exact seasonal
@@ -89,7 +89,7 @@ class NASAPowerClient:
         "PRECTOTCORR", "GWETTOP", "GWETROOT", "GWETPROF",
     )
 
-    def __init__(self, cache_dir: Union[str, Path] = "./nasa_cache", timeout: int = 60) -> None:
+    def __init__(self, cache_dir: Union[str, Path] = "data/cache", timeout: int = 60) -> None:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.timeout = timeout

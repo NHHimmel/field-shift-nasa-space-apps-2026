@@ -8,3 +8,16 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Local secrets and runtime state
+.env
+data/cache/
+nasa_cache/
+
+# Generated exports and local datasets
+outputs/*
+!outputs/.gitkeep
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep

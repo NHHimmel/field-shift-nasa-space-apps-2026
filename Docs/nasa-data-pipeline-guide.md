@@ -2,7 +2,7 @@
 
 ## Four Unified API Backends Cover Every Field Shift Agricultural Dataset
 
-The `field_shift_nasa_data.py` module provides a single, extensible interface for pulling, scaling, and merging all seven core satellite categories and five supplemental training features specified in the **Field Shift: Adapting Farms with NASA Data** project architecture. Instead of writing custom parsers for disparate archive centers, the library routes requests through four specialized backends matched to each sensor's resolution and delivery format:
+The `field_shift.nasa_data` module provides a single, extensible interface for pulling, scaling, and merging all seven core satellite categories and five supplemental training features specified in the **Field Shift: Adapting Farms with NASA Data** project architecture. Instead of writing custom parsers for disparate archive centers, the library routes requests through four specialized backends matched to each sensor's resolution and delivery format:
 
 * **[NASA POWER Agroclimatology API](https://www.google.com/search?q=https%3A%2F%2Fpower.larc.nasa.gov%2Fdocs%2Fservices%2Fapi%2F) (`NASAPowerClient`):** Delivers zero-authentication daily time series of temperature, relative/specific humidity, solar irradiance, photosynthetically active radiation (PAR), wind speed, bias-corrected precipitation, and three-layer soil wetness derived from [MERRA-2](https://www.google.com/search?q=https%3A%2F%2Fgmao.gsfc.nasa.gov%2Fgmao-products%2Fmerra-2%2F) and satellite solar observations ([POWER Dataset Catalog](https://www.google.com/search?q=https%3A%2F%2Fdata.nasa.gov%2Fdataset%2Fprediction-of-worldwide-energy-resources-power)).
 * **[NASA AppEEARS REST API](https://www.google.com/search?q=https%3A%2F%2Fappeears.earthdatacloud.nasa.gov%2Fapi%2F) (`AppEEARSClient`):** Executes server-side point and polygon extractions across [MODIS](https://www.google.com/search?q=https%3A%2F%2Fwww.earthdata.nasa.gov%2Fdata%2Finstruments%2Fmodis), [Harmonized Landsat Sentinel-2 (HLS)](https://www.google.com/search?q=https%3A%2F%2Fwww.earthdata.nasa.gov%2Fdata%2Fprojects%2Fhls), [ECOSTRESS](https://www.google.com/search?q=https%3A%2F%2Fwww.earthdata.nasa.gov%2Fdata%2Finstruments%2Fecostress), [SMAP](https://www.google.com/search?q=https%3A%2F%2Fwww.earthdata.nasa.gov%2Fdata%2Fplatforms%2Fspace-based-platforms%2Fsmap), and [SRTM](https://www.google.com/search?q=https%3A%2F%2Fwww.earthdata.nasa.gov%2Fdata%2Ftools%2Fappeears), returning analysis-ready CSVs without downloading multi-gigabyte raw tiles.
@@ -60,7 +60,7 @@ earthengine authenticate
 Use `NASAPowerClient` or `FieldShiftFeatureBuilder` to pull a complete daily meteorological and soil-moisture feature matrix for any farm coordinate immediately:
 
 ```python
-from field_shift_nasa_data import FarmLocation, FieldShiftFeatureBuilder
+from field_shift.nasa_data import FarmLocation, FieldShiftFeatureBuilder
 
 # 1. Define target farm location and farmer metadata
 farm = FarmLocation(
@@ -93,7 +93,7 @@ print("Seasonal Summary:", seasonal_features)
 To merge 30 m [HLS](https://www.google.com/search?q=https%3A%2F%2Fwww.earthdata.nasa.gov%2Fdata%2Fprojects%2Fhls) and 250 m [MODIS](https://www.google.com/search?q=https%3A%2F%2Fwww.earthdata.nasa.gov%2Fdata%2Finstruments%2Fmodis) NDVI/EVI, 500 m [MODIS Evapotranspiration](https://www.google.com/search?q=https%3A%2F%2Fdevelopers.google.com%2Fearth-engine%2Fdatasets%2Fcatalog%2Fmodis), 1 km Land Surface Temperature, 30 m SRTM terrain slope/elevation, 9 km [SMAP L4 Root-Zone Soil Moisture](https://www.google.com/search?q=https%3A%2F%2Fwww.earthdata.nasa.gov%2Fdata%2Fcatalog%2Fnsidc-cprd-spl4smgp-008), and weekly [GRACE Groundwater Drought Percentiles](https://www.google.com/search?q=https%3A%2F%2Fwww.earthdata.nasa.gov%2Fdata%2Fcatalog%2Fges-disc-gracedadm-clsm025gl-7d-3.0) onto the same daily index:
 
 ```python
-from field_shift_nasa_data import (
+from field_shift.nasa_data import (
     EarthAccessClient,
     EarthEngineClient,
     FarmLocation,
@@ -131,7 +131,7 @@ full_training_df.to_csv("bogura_field_04_training_features.csv")
 When building a historical training dataset across dozens or hundreds of farm coordinates including 70 m [ECOSTRESS Evapotranspiration (ECO\_L3T\_JET)](https://www.google.com/search?q=https%3A%2F%2Fwww.earthdata.nasa.gov%2Fdata%2Fcatalog%2Flpcloud-eco-l3t-jet-002) and [Evaporative Stress Index (ECO\_L4T\_ESI)](https://www.google.com/search?q=https%3A%2F%2Fwww.earthdata.nasa.gov%2Fdata%2Fcatalog%2Flpcloud-eco-l4t-esi-003), submit a single batch point request to [AppEEARS](https://www.google.com/search?q=https%3A%2F%2Fappeears.earthdatacloud.nasa.gov%2Fapi%2F):
 
 ```python
-from field_shift_nasa_data import AppEEARSClient, FarmLocation
+from field_shift.nasa_data import AppEEARSClient, FarmLocation
 
 farms = [
     FarmLocation("farm_north", latitude=25.7439, longitude=89.2752, farmer_priority="balanced"),

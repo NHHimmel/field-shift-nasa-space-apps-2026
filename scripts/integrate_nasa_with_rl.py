@@ -28,20 +28,25 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-current_dir = str(Path(__file__).resolve().parent)
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+MODEL_DIR = PROJECT_ROOT / "artifacts" / "models"
+OUTPUT_DIR = PROJECT_ROOT / "outputs"
+CACHE_DIR = PROJECT_ROOT / "data" / "cache"
 
 import numpy as np
 import pandas as pd
 
-from field_shift_nasa_data import (
+from field_shift.nasa_data import (
     NW_BANGLADESH_DISTRICTS,
     FarmLocation,
     NASAPowerClient,
     normalize_daily_sequence,
 )
-from field_shift_rl_pipeline import (
+from field_shift.rl_pipeline import (
     CROP_CATALOG,
     EXISTING_BASELINE_PATH,
     FARMER_SCIENTIFIC_GLOSSARY,
@@ -62,7 +67,7 @@ from field_shift_rl_pipeline import (
 
 if HAS_TORCH:
     import torch
-    from field_shift_rl_pipeline import CropRotationActorCritic, train_pytorch_actor_critic
+    from field_shift.rl_pipeline import CropRotationActorCritic, train_pytorch_actor_critic
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s - %(message)s")
 logger = logging.getLogger("FieldShiftIntegration")
@@ -99,7 +104,7 @@ def build_multi_decade_regional_dataset(
     districts: List[FarmLocation],
     start_year: int = 2005,
     end_year: int = 2024,
-    cache_dir: str = "./nasa_cache",
+    cache_dir: str = str(CACHE_DIR),
 ) -> Tuple[List[Dict], Dict[str, List[Dict]], Dict[str, Dict]]:
     power_client = NASAPowerClient(cache_dir=cache_dir)
     bulk_start = f"{start_year - 1}1101"
@@ -293,7 +298,7 @@ def run_nasa_rl_workflow():
         districts=NW_BANGLADESH_DISTRICTS,
         start_year=2005,
         end_year=2024,
-        cache_dir="./nasa_cache",
+        cache_dir=str(CACHE_DIR),
     )
 
     actor_critic_model = None
@@ -343,7 +348,8 @@ def run_nasa_rl_workflow():
                 float(np.mean(rets[-20:])),
             )
 
-        ckpt_path = Path("field_shift_sota_policy.pt")
+        MODEL_DIR.mkdir(parents=True, exist_ok=True)
+        ckpt_path = MODEL_DIR / "field_shift_sota_policy.pt"
         torch.save(actor_critic_model.state_dict(), ckpt_path)
         logger.info("Saved trained SOTA PyTorch policy weights to '%s'.", ckpt_path)
     else:
@@ -459,7 +465,8 @@ def run_nasa_rl_workflow():
         "districts": web_districts_payload,
     }
 
-    json_path = Path("field_shift_web_payload.json")
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    json_path = OUTPUT_DIR / "field_shift_web_payload.json"
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(full_web_bundle, f, indent=2, ensure_ascii=False)
     logger.info("Exported complete frontend-ready JSON payload to '%s' (%.1f KB).", json_path, json_path.stat().st_size / 1024.0)

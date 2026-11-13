@@ -1,9 +1,19 @@
 [project]
 name = "nasa-space-apps-2026"
 version = "0.1.0"
-description = "Add your description here"
+description = "NASA Earth observation and reinforcement-learning decision support for climate-resilient crop rotation"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "numpy>=2.0.0",
+    "pandas>=2.2.0",
+    "requests>=2.32.0",
     "torch>=2.15.0",
 ]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
