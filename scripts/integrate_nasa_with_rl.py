@@ -54,6 +54,7 @@ from field_shift.rl_pipeline import (
     FARMER_SCIENTIFIC_GLOSSARY,
     HAS_TORCH,
     NUM_CROPS,
+    PRIORITY_MODES,
     SEASON_ACTION_MAP,
     SEASON_NAMES,
     CropRotationMDPEnv,
@@ -353,7 +354,23 @@ def run_nasa_rl_workflow():
 
         MODEL_DIR.mkdir(parents=True, exist_ok=True)
         ckpt_path = MODEL_DIR / "field_shift_sota_policy.pt"
-        torch.save(actor_critic_model.state_dict(), ckpt_path)
+        torch.save(
+            {
+                "state_dict": actor_critic_model.state_dict(),
+                "model_config": {
+                    "state_dim": 17,
+                    "daily_feature_dim": 12,
+                    "hidden_dim": 64,
+                    "action_dim": NUM_CROPS,
+                },
+                "priority_modes": list(PRIORITY_MODES),
+                "crop_catalog": [
+                    {"crop_id": c.crop_id, "name": c.name, "season": c.season}
+                    for c in CROP_CATALOG
+                ],
+            },
+            ckpt_path,
+        )
         logger.info("Saved trained SOTA PyTorch policy weights to '%s'.", ckpt_path)
     else:
         logger.info("Step 2: PyTorch not detected in VM environment; proceeding to Pareto evaluation.")

@@ -684,7 +684,147 @@ if HAS_TORCH:
             values = self.critic_heads[head_key](features)
             return log_probs, values.squeeze(-1), entropy
 
-# STAGE 4: ADVANTAGE ACTOR-CRITIC (A2C) TRAINING OVER 64 DISTRICTS & 50 CROPS
+# STAGE 4: TRAINED POLICY LOADING AND GENUINE NEURAL INFERENCE
+
+if HAS_TORCH:
+    def load_trained_policy(
+        checkpoint_path: Union[str, Path],
+        device: Optional[str] = None,
+        hidden_dim: int = 64,
+    ) -> Any:
+        """Load and validate a checkpoint for the current crop/action catalog."""
+        resolved_device = resolve_torch_device(device)
+        checkpoint_file = Path(checkpoint_path)
+        if not checkpoint_file.exists():
+            raise FileNotFoundError(f"Policy checkpoint not found: {checkpoint_file}")
+
+        try:
+            checkpoint = torch.load(
+                checkpoint_file, map_location=resolved_device, weights_only=True
+            )
+        except TypeError:
+            checkpoint = torch.load(checkpoint_file, map_location=resolved_device)
+
+        state_dict = checkpoint.get("state_dict", checkpoint) if isinstance(checkpoint, dict) else checkpoint
+        model = CropRotationActorCritic(
+            state_dim=17,
+            daily_feature_dim=12,
+            hidden_dim=hidden_dim,
+            action_dim=NUM_CROPS,
+        )
+        expected_state = model.state_dict()
+        missing_keys = sorted(set(expected_state) - set(state_dict))
+        unexpected_keys = sorted(set(state_dict) - set(expected_state))
+        shape_errors = [
+            key for key in set(expected_state).intersection(state_dict)
+            if tuple(expected_state[key].shape) != tuple(state_dict[key].shape)
+        ]
+        if missing_keys or unexpected_keys or shape_errors:
+            raise ValueError(
+                "Policy checkpoint is incompatible with the current model catalog. "
+                f"Expected {NUM_CROPS} actions and heads {PRIORITY_MODES}; "
+                f"missing={missing_keys[:5]}, unexpected={unexpected_keys[:5]}, "
+                f"shape_mismatches={shape_errors[:5]}. Retrain the policy with the current code."
+            )
+
+        model.load_state_dict(state_dict, strict=True)
+        model.to(resolved_device)
+        model.eval()
+        return model
+
+
+    def infer_policy_rotation(
+        farm: FarmProfile,
+        seasonal_climates: List[np.ndarray],
+        policy_net: Any,
+        seasonal_daily_sequences: Optional[List[np.ndarray]] = None,
+        priority_mode: Optional[str] = None,
+        locked_season_crops: Optional[Dict[str, str]] = None,
+        excluded_crops: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Run deterministic greedy inference through the trained policy."""
+        mode = priority_mode or farm.priority_mode
+        if mode not in PRIORITY_MODES:
+            raise ValueError(f"Unknown priority mode: {mode}")
+
+        env = CropRotationMDPEnv(farm, seasonal_climates, seasonal_daily_sequences)
+        state = env.reset()
+        chosen_ids: List[int] = []
+        step_results: List[Dict[str, Any]] = []
+        locked = locked_season_crops or {}
+        excluded_ids = {
+            CROP_NAME_TO_ID[name]
+            for name in (excluded_crops or [])
+            if name in CROP_NAME_TO_ID
+        }
+        season_indices = {"Rabi": 0, "Kharif-1": 1, "Kharif-2": 2}
+        model_device = next(policy_net.parameters()).device
+
+        with torch.no_grad():
+            done = False
+            while not done:
+                mask = env.get_action_mask()
+                mask[list(excluded_ids)] = 0.0
+
+                locked_crop = locked.get(SEASON_NAMES[env.current_season_idx])
+                if locked_crop in CROP_NAME_TO_ID:
+                    locked_id = CROP_NAME_TO_ID[locked_crop]
+                    mask[:] = 0.0
+                    mask[locked_id] = 1.0
+
+                if not np.any(mask):
+                    raise ValueError(
+                        f"No legal crops remain for {SEASON_NAMES[env.current_season_idx]} "
+                        "after applying farmer constraints."
+                    )
+
+                state_tensor = torch.tensor(state, dtype=torch.float32, device=model_device).unsqueeze(0)
+                mask_tensor = torch.tensor(mask, dtype=torch.float32, device=model_device).unsqueeze(0)
+                daily_tensor = torch.tensor(
+                    env.get_daily_sequence(), dtype=torch.float32, device=model_device
+                ).unsqueeze(0)
+                distribution, value = policy_net(
+                    state_tensor,
+                    mask_tensor,
+                    priority_mode=mode,
+                    daily_seq=daily_tensor,
+                )
+                action = int(torch.argmax(distribution.probs, dim=-1).item())
+                confidence = float(distribution.probs[0, action].item())
+                state, reward, done, step_info = env.step(action)
+                chosen_ids.append(action)
+                step_results.append({
+                    **step_info,
+                    "policy_confidence": round(confidence, 4),
+                    "state_value": round(float(value.item()), 4),
+                    "reward": round(float(reward), 4),
+                })
+
+        return {
+            "inference_mode": "trained_neural_policy",
+            "policy_mode": mode,
+            "sequence_ids": chosen_ids,
+            "recommended_rotation": " -> ".join(CROP_CATALOG[i].name for i in chosen_ids),
+            "total_reward": round(float(sum(step["reward"] for step in step_results)), 4),
+            "metrics": {
+                "total_profit_usd": round(env.cumulative_profit_usd, 1),
+                "total_water_mm": round(env.cumulative_water_used_mm, 1),
+                "total_blue_water_mm": round(env.cumulative_blue_water_mm, 1),
+                "final_soil_n": round(env.soil_n, 1),
+                "soil_n_delta": round(env.soil_n - farm.baseline_soil_n_kg_ha, 1),
+            },
+            "seasonal_decisions": step_results,
+        }
+else:
+    def load_trained_policy(*args: Any, **kwargs: Any) -> Any:
+        raise RuntimeError("PyTorch is required for trained neural-policy inference.")
+
+
+    def infer_policy_rotation(*args: Any, **kwargs: Any) -> Dict[str, Any]:
+        raise RuntimeError("PyTorch is required for trained neural-policy inference.")
+
+
+# STAGE 5: ADVANTAGE ACTOR-CRITIC (A2C) TRAINING OVER 64 DISTRICTS & 50 CROPS
 
 def train_pytorch_actor_critic(
     env_generator,
@@ -884,6 +1024,7 @@ def generate_three_way_tradeoffs(
     if include_existing_baseline:
         selected_rows.append({
             "Strategy": "Existing Rotation (Baseline)",
+            "Inference Source": "baseline_simulation",
             "Recommended Rotation": baseline_eval["rotation_name"],
             "Net Profit ($/ha)": baseline_eval["total_profit_usd"],
             "Total Water (mm)": baseline_eval["total_water_mm"],
@@ -902,17 +1043,36 @@ def generate_three_way_tradeoffs(
         modes.append(("High-Value Vegetable", "high_value_vegetable", veg_candidates))
 
     for display_name, mode_key, pool in modes:
-        evals = [
-            evaluate_rotation_trajectory(
-                farm, seasonal_climates, path, mode_key, seasonal_daily_sequences
+        if policy_net is not None:
+            neural_result = infer_policy_rotation(
+                farm=farm,
+                seasonal_climates=seasonal_climates,
+                policy_net=policy_net,
+                seasonal_daily_sequences=seasonal_daily_sequences,
+                priority_mode=mode_key,
             )
-            for path in pool
-        ]
-        evals.sort(key=lambda x: x["cumulative_reward"], reverse=True)
-        best = evals[0]
+            best = evaluate_rotation_trajectory(
+                farm,
+                seasonal_climates,
+                tuple(neural_result["sequence_ids"]),
+                mode_key,
+                seasonal_daily_sequences,
+            )
+            inference_source = "trained_neural_policy"
+        else:
+            evals = [
+                evaluate_rotation_trajectory(
+                    farm, seasonal_climates, path, mode_key, seasonal_daily_sequences
+                )
+                for path in pool
+            ]
+            evals.sort(key=lambda x: x["cumulative_reward"], reverse=True)
+            best = evals[0]
+            inference_source = "candidate_evaluation_fallback"
 
         selected_rows.append({
             "Strategy": display_name,
+            "Inference Source": inference_source,
             "Recommended Rotation": best["rotation_name"],
             "Net Profit ($/ha)": best["total_profit_usd"],
             "Total Water (mm)": best["total_water_mm"],
@@ -1090,6 +1250,8 @@ def query_field_shift_api(
     temp_delta_c: float = 0.0,
     grace_gw_delta_pct: float = 0.0,
     seasonal_climates: Optional[List[np.ndarray]] = None,
+    policy_net: Optional[Any] = None,
+    seasonal_daily_sequences: Optional[List[np.ndarray]] = None,
 ) -> Dict[str, Any]:
     """
     Live Web Backend Inference Endpoint (`POST /api/recommend`).
@@ -1100,6 +1262,12 @@ def query_field_shift_api(
          - `locked_season_crops`: e.g. {"Rabi": "Onion"} to lock one season and let AI optimize the rest.
          - `excluded_crops`: e.g. ["Tobacco", "Boro"] to filter out unwanted crops.
     """
+    if policy_net is None:
+        raise ValueError(
+            "Genuine neural inference requires a loaded policy_net. "
+            "Call load_trained_policy(...) once at backend startup and pass it here."
+        )
+
     fertility_map = {"low": (50.0, 0.8), "medium": (75.0, 1.2), "high": (105.0, 1.8)}
     base_n, base_som = fertility_map.get(soil_fertility_level.lower(), (75.0, 1.2))
 
@@ -1140,48 +1308,19 @@ def query_field_shift_api(
         farm, perturbed_climates, baseline_ids, priority_mode
     )
 
-    core_pool, veg_pool = _get_candidate_pools()
-    excluded_ids = {CROP_NAME_TO_ID[c] for c in (excluded_crops or []) if c in CROP_NAME_TO_ID}
-
-    def _filter_pool(pool: List[Tuple[int, int, int]]) -> List[Tuple[int, int, int]]:
-        filtered = [p for p in pool if not (set(p) & excluded_ids)]
-        if locked_season_crops:
-            s_map = {"Rabi": 0, "Kharif-1": 1, "Kharif-2": 2}
-            for s_name, c_name in locked_season_crops.items():
-                if s_name in s_map and c_name in CROP_NAME_TO_ID:
-                    s_idx = s_map[s_name]
-                    cid = CROP_NAME_TO_ID[c_name]
-                    filtered = [p for p in filtered if p[s_idx] == cid]
-                    if not filtered:
-                        r_list = [cid] if s_idx == 0 else SEASON_ACTION_MAP[0]
-                        k1_list = [cid] if s_idx == 1 else SEASON_ACTION_MAP[1]
-                        k2_list = [cid] if s_idx == 2 else [CROP_NAME_TO_ID.get("Aman", SEASON_ACTION_MAP[2][0])]
-                        filtered = [(r, k1, k2) for r in r_list for k1 in k1_list for k2 in k2_list if not ({r, k1, k2} & excluded_ids)]
-        return filtered or pool
-
-    modes = [
-        ("Balanced", "balanced", _filter_pool(core_pool)),
-        ("Water Conservation", "water_conservation", _filter_pool(core_pool)),
-        ("Soil Health", "soil_health", _filter_pool(core_pool)),
-        ("High-Value Vegetable", "high_value_vegetable", _filter_pool(veg_pool)),
-    ]
-
-    strategies = [{
-        "strategy_name": "Existing Rotation (Baseline)",
-        "recommended_rotation": baseline_eval["rotation_name"],
-        "metrics": baseline_eval,
-    }]
-    for display_name, mode_key, pool in modes:
-        evals = [evaluate_rotation_trajectory(farm, perturbed_climates, path, mode_key) for path in pool]
-        evals.sort(key=lambda x: x["cumulative_reward"], reverse=True)
-        strategies.append({
-            "strategy_name": display_name,
-            "recommended_rotation": evals[0]["rotation_name"],
-            "metrics": evals[0],
-        })
+    neural_result = infer_policy_rotation(
+        farm=farm,
+        seasonal_climates=perturbed_climates,
+        policy_net=policy_net,
+        seasonal_daily_sequences=seasonal_daily_sequences,
+        priority_mode=priority_mode,
+        locked_season_crops=locked_season_crops,
+        excluded_crops=excluded_crops,
+    )
 
     return {
         "district": district_name,
+        "inference_mode": "trained_neural_policy",
         "farmer_inputs": {
             "irrigation_access": irrigation_access,
             "priority_mode": priority_mode,
@@ -1189,10 +1328,13 @@ def query_field_shift_api(
             "current_crops": current_crops or ("Boro Rice", "Fallow", "T. Aman Rice"),
             "locked_season_crops": locked_season_crops or {},
             "excluded_crops": excluded_crops or [],
+            "rainfall_delta_pct": rainfall_delta_pct,
+            "temp_delta_c": temp_delta_c,
+            "grace_gw_delta_pct": grace_gw_delta_pct,
         },
-        "strategies": strategies,
+        "neural_policy_recommendation": neural_result,
+        "baseline_comparison": baseline_eval,
     }
-
 
 if __name__ == "__main__":
     logger.info(
