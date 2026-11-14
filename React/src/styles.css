@@ -60,6 +60,10 @@ button, select, input { font: inherit; color: inherit; }
 
 .header { background: var(--brand); color: #fff; }
 .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; padding-bottom: 8px; }
+<<<<<<< HEAD
+.header-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
+=======
+>>>>>>> parent of 630a375 (clean ui)
 .brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; min-width: 0; }
 .brand img { border-radius: 10px; background: #fff2; flex: none; }
 .brand span { display: flex; flex-direction: column; min-width: 0; }
@@ -69,6 +73,17 @@ button, select, input { font: inherit; color: inherit; }
 .lang-toggle { display: flex; background: #ffffff22; border-radius: 999px; padding: 3px; flex: none; }
 .lang-toggle button { border: 0; background: transparent; color: #fff; padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 0.9rem; min-height: 36px; }
 .lang-toggle button.on { background: #fff; color: var(--brand-dark); font-weight: 600; }
+<<<<<<< HEAD
+.api-status { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 8px; font-size: 0.72rem; white-space: nowrap; }
+.header .api-status { color: #fff; background: #ffffff22; }
+.header .api-status.ok { color: #d8f7df; }
+.header .api-status.error { color: #ffe0dc; background: #7d201c88; }
+.footer .api-status { background: var(--surface-2); }
+.api-status.ok > span { color: #8fe0a4; }
+.api-status.error > span { color: var(--bad); }
+.api-status.loading > span { color: var(--sun); }
+=======
+>>>>>>> parent of 630a375 (clean ui)
 
 .nav { display: flex; gap: 4px; padding-bottom: 8px; }
 .nav a { color: #fff; opacity: 0.85; text-decoration: none; padding: 4px 10px; border-radius: 8px; font-size: 0.95rem; }
@@ -86,6 +101,10 @@ button, select, input { font: inherit; color: inherit; }
 .primary.big { width: 100%; font-size: 1.15rem; min-height: 56px; margin-top: 8px; }
 .ghost { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer; min-height: 40px; }
 .link { background: none; border: 0; color: var(--brand); text-decoration: underline; cursor: pointer; padding: 0; font-weight: 600; }
+<<<<<<< HEAD
+.demo-link { align-self: flex-start; font-size: 0.9rem; margin-top: -4px; }
+=======
+>>>>>>> parent of 630a375 (clean ui)
 
 .note { border-radius: 12px; padding: 10px 12px; margin: 0 0 14px; }
 .note.warn, .warn-card { background: var(--warn-bg); color: var(--warn-ink); border-color: #f1d79a; }
@@ -178,6 +197,26 @@ fieldset { border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
 .explanation ul { padding-left: 1.1em; }
 .exp-headline { font-size: 1.12rem; font-weight: 600; background: var(--brand-soft); border-radius: 12px; padding: 10px 12px; }
 .source-note { border-top: 1px dashed var(--line); padding-top: 8px; margin-top: 12px; }
+<<<<<<< HEAD
+.evidence-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.evidence-panel > summary { cursor: pointer; font-size: 1.2rem; font-weight: 700; list-style-position: inside; }
+.evidence-panel[open] > summary { margin-bottom: 14px; }
+.evidence-item { display: flex; flex-direction: column; gap: 2px; background: var(--surface-2); border-radius: 10px; padding: 10px; min-width: 0; }
+.evidence-item strong { overflow-wrap: anywhere; }
+.evidence-wide { grid-column: 1 / -1; }
+.evidence-sources { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 10px; }
+.evidence-sources h3 { margin-top: 0; }
+.evidence-sources ul { list-style: none; padding: 0; margin: 0; }
+.evidence-sources li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.evidence-sources li > span:first-child { display: flex; flex-direction: column; min-width: 0; }
+.source-status { flex: none; border-radius: 999px; padding: 2px 7px; font-size: 0.72rem; background: var(--surface-2); color: var(--muted); }
+.source-status.active { background: var(--brand-soft); color: var(--brand-dark); }
+.source-status.derived { background: var(--water-soft); color: var(--water); }
+.source-status.fallback { background: var(--warn-bg); color: var(--warn-ink); }
+.evidence-tech { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.evidence-tech summary { cursor: pointer; color: var(--brand); font-weight: 600; }
+=======
+>>>>>>> parent of 630a375 (clean ui)
 .skeleton { height: 14px; border-radius: 6px; background: linear-gradient(90deg, #eef2ea, #f8faf6, #eef2ea); background-size: 200% 100%; animation: shimmer 1.2s infinite; margin: 10px 0; }
 .skeleton.short { width: 60%; }
 @keyframes shimmer { to { background-position: -200% 0; } }
@@ -262,3 +301,12 @@ fieldset { border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
 @media (prefers-reduced-motion: reduce) {
   .skeleton, .spinner { animation: none; }
 }
+<<<<<<< HEAD
+
+@media (max-width: 560px) {
+  .header .api-status { display: none; }
+  .evidence-grid { grid-template-columns: 1fr; }
+  .evidence-wide { grid-column: auto; }
+}
+=======
+>>>>>>> parent of 630a375 (clean ui)

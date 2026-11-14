@@ -1,0 +1,360 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/AppFrame.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=32356488"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=32356488"; const useMemo = __vite__cjsImport3_react["useMemo"];
+import { useI18n } from "/src/i18n/I18nProvider.tsx?t=1794690757776";
+import { fmtInt, fmtMm, fmtTaka } from "/src/lib/format.ts";
+import { PlanBody } from "/src/components/PlanWindow.tsx?t=1794690757776";
+export function AppFrame({
+  list,
+  open,
+  meta,
+  names
+}) {
+  _s();
+  const { t, lang } = useI18n();
+  const divisions = useMemo(() => {
+    const counts = /* @__PURE__ */ new Map();
+    for (const d of meta?.districts ?? []) {
+      const c = counts.get(d.division_en) ?? { label: lang === "bn" ? d.division_bn : d.division_en, n: 0 };
+      c.n += 1;
+      counts.set(d.division_en, c);
+    }
+    const first = open?.district.division_en;
+    return [...counts.entries()].sort(([a], [b]) => a === first ? -1 : b === first ? 1 : a.localeCompare(b)).slice(0, 4).map(([key, v]) => ({ key, ...v, on: key === first }));
+  }, [meta, lang, open]);
+  const card = open?.strategies.find((s) => s.key === open.recommended_strategy);
+  const base = open?.strategies.find((s) => s.key === "baseline");
+  const initials = (key) => names.district(key).slice(0, 2);
+  return /* @__PURE__ */ jsxDEV(
+    "div",
+    {
+      className: "ui app fill",
+      role: "img",
+      "aria-label": t("ex.aria", { district: open ? names.district(open.district.key) : "" }),
+      children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "app__pane app__pane--list", children: /* @__PURE__ */ jsxDEV("div", { className: "ui ui-panel ui-win", "aria-hidden": "true", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "ui-win__bar", children: [
+            /* @__PURE__ */ jsxDEV("span", { className: "ui-dots", children: [
+              /* @__PURE__ */ jsxDEV("i", {}, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 65,
+                columnNumber: 39
+              }, this),
+              /* @__PURE__ */ jsxDEV("i", {}, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 65,
+                columnNumber: 44
+              }, this),
+              /* @__PURE__ */ jsxDEV("i", {}, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 65,
+                columnNumber: 49
+              }, this)
+            ] }, void 0, true, {
+              fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+              lineNumber: 65,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { className: "ui-win__crumb", children: [
+              t("app.name"),
+              " ",
+              /* @__PURE__ */ jsxDEV("i", { children: "/" }, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 66,
+                columnNumber: 61
+              }, this),
+              " ",
+              /* @__PURE__ */ jsxDEV("b", { children: t("ex.crumb") }, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 66,
+                columnNumber: 70
+              }, this)
+            ] }, void 0, true, {
+              fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+              lineNumber: 66,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { className: "ui-spacer" }, void 0, false, {
+              fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+              lineNumber: 67,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { className: "ui-win__search", children: [
+              /* @__PURE__ */ jsxDEV("svg", { className: "ui-icon", viewBox: "0 0 16 16", children: [
+                /* @__PURE__ */ jsxDEV("circle", { cx: "7", cy: "7", r: "4.5" }, void 0, false, {
+                  fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                  lineNumber: 69,
+                  columnNumber: 60
+                }, this),
+                /* @__PURE__ */ jsxDEV("path", { d: "m10.5 10.5 3 3" }, void 0, false, {
+                  fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                  lineNumber: 69,
+                  columnNumber: 92
+                }, this)
+              ] }, void 0, true, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 69,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "ui-win__ph", children: t("ex.search") }, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 70,
+                columnNumber: 15
+              }, this)
+            ] }, void 0, true, {
+              fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+              lineNumber: 68,
+              columnNumber: 13
+            }, this)
+          ] }, void 0, true, {
+            fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+            lineNumber: 64,
+            columnNumber: 11
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "ui-win__body", children: [
+            /* @__PURE__ */ jsxDEV("nav", { className: "ui-win__side", children: [
+              /* @__PURE__ */ jsxDEV("span", { className: "ui-win__nav", children: [
+                t("ex.side.all"),
+                /* @__PURE__ */ jsxDEV("em", { children: fmtInt(meta?.districts.length ?? 64, lang) }, void 0, false, {
+                  fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                  lineNumber: 75,
+                  columnNumber: 63
+                }, this)
+              ] }, void 0, true, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 75,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "ui-win__label", children: t("ex.side.divisions") }, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 76,
+                columnNumber: 15
+              }, this),
+              divisions.map(
+                (d) => /* @__PURE__ */ jsxDEV("span", { className: `ui-win__nav ${d.on ? "is-on" : ""}`, children: [
+                  d.label,
+                  /* @__PURE__ */ jsxDEV("em", { children: fmtInt(d.n, lang) }, void 0, false, {
+                    fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                    lineNumber: 79,
+                    columnNumber: 28
+                  }, this)
+                ] }, d.key, true, {
+                  fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                  lineNumber: 78,
+                  columnNumber: 15
+                }, this)
+              )
+            ] }, void 0, true, {
+              fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+              lineNumber: 74,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "ui-win__main", children: [
+              /* @__PURE__ */ jsxDEV("div", { className: "ui-win__cols", children: [
+                /* @__PURE__ */ jsxDEV("span", { children: t("ex.col.district") }, void 0, false, {
+                  fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                  lineNumber: 84,
+                  columnNumber: 45
+                }, this),
+                /* @__PURE__ */ jsxDEV("span", { children: t("ex.col.plan") }, void 0, false, {
+                  fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                  lineNumber: 84,
+                  columnNumber: 80
+                }, this),
+                /* @__PURE__ */ jsxDEV("span", { children: t("ex.col.profit") }, void 0, false, {
+                  fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                  lineNumber: 84,
+                  columnNumber: 111
+                }, this),
+                /* @__PURE__ */ jsxDEV("span", {}, void 0, false, {
+                  fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                  lineNumber: 84,
+                  columnNumber: 144
+                }, this)
+              ] }, void 0, true, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 84,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("ul", { className: "ui-win__rows", children: list.map((r, i) => {
+                const best = r.strategies.find((s) => s.key === r.recommended_strategy);
+                if (!best) return null;
+                const on = r.district.key === open?.district.key;
+                return /* @__PURE__ */ jsxDEV("li", { className: `ui-win__row ${on ? "is-on" : ""}`, children: [
+                  /* @__PURE__ */ jsxDEV("span", { className: "ui-avatar", "data-tone": i % 5 + 1, children: initials(r.district.key) }, void 0, false, {
+                    fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                    lineNumber: 92,
+                    columnNumber: 23
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("span", { className: "ui-win__who", children: names.district(r.district.key) }, void 0, false, {
+                    fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                    lineNumber: 93,
+                    columnNumber: 23
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("span", { className: "ui-win__sub", children: best.crops.map((c) => names.crop(c)).join(" → ") }, void 0, false, {
+                    fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                    lineNumber: 94,
+                    columnNumber: 23
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("span", { className: `ui-win__st ${on ? "is-you" : "is-done"}`, children: fmtTaka(best.metrics.profit_bdt_bigha, lang) }, void 0, false, {
+                    fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                    lineNumber: 95,
+                    columnNumber: 23
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("span", { className: "ui-win__age", children: fmtMm(best.metrics.water_mm, lang) }, void 0, false, {
+                    fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                    lineNumber: 96,
+                    columnNumber: 23
+                  }, this)
+                ] }, r.district.key, true, {
+                  fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                  lineNumber: 91,
+                  columnNumber: 21
+                }, this);
+              }) }, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 85,
+                columnNumber: 15
+              }, this)
+            ] }, void 0, true, {
+              fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+              lineNumber: 83,
+              columnNumber: 13
+            }, this)
+          ] }, void 0, true, {
+            fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+            lineNumber: 73,
+            columnNumber: 11
+          }, this)
+        ] }, void 0, true, {
+          fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+          lineNumber: 63,
+          columnNumber: 9
+        }, this) }, void 0, false, {
+          fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+          lineNumber: 62,
+          columnNumber: 7
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "app__pane app__pane--open", children: /* @__PURE__ */ jsxDEV("div", { className: "ui ui-panel fs-open", "aria-hidden": "true", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "fs-win__bar", children: [
+            /* @__PURE__ */ jsxDEV("span", { className: "fs-win__crumb", children: [
+              /* @__PURE__ */ jsxDEV("b", { children: open ? names.district(open.district.key) : "…" }, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 109,
+                columnNumber: 15
+              }, this),
+              open ? /* @__PURE__ */ jsxDEV("i", { children: lang === "bn" ? open.district.division_bn : open.district.division_en }, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 110,
+                columnNumber: 23
+              }, this) : null
+            ] }, void 0, true, {
+              fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+              lineNumber: 108,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { className: "ui-spacer" }, void 0, false, {
+              fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+              lineNumber: 112,
+              columnNumber: 13
+            }, this),
+            card ? /* @__PURE__ */ jsxDEV("span", { className: "ui-chip ui-chip--accent", children: t(`strategy.${card.key}`) }, void 0, false, {
+              fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+              lineNumber: 113,
+              columnNumber: 21
+            }, this) : null
+          ] }, void 0, true, {
+            fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+            lineNumber: 107,
+            columnNumber: 11
+          }, this),
+          card ? /* @__PURE__ */ jsxDEV(PlanBody, { card, base, names }, void 0, false, {
+            fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+            lineNumber: 115,
+            columnNumber: 19
+          }, this) : null,
+          open ? /* @__PURE__ */ jsxDEV("ul", { className: "fs-others", children: open.strategies.map(
+            (s) => /* @__PURE__ */ jsxDEV("li", { className: s.key === card?.key ? "is-on" : "", children: [
+              /* @__PURE__ */ jsxDEV("span", { className: "fs-others__name", children: t(`strategy.${s.key}`) }, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 120,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "fs-others__chain", children: s.crops.map((c) => names.crop(c)).join(" → ") }, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 121,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "fs-others__fig", children: fmtTaka(s.metrics.profit_bdt_bigha, lang) }, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+                lineNumber: 122,
+                columnNumber: 19
+              }, this)
+            ] }, s.key, true, {
+              fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+              lineNumber: 119,
+              columnNumber: 13
+            }, this)
+          ) }, void 0, false, {
+            fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+            lineNumber: 117,
+            columnNumber: 11
+          }, this) : null
+        ] }, void 0, true, {
+          fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+          lineNumber: 106,
+          columnNumber: 9
+        }, this) }, void 0, false, {
+          fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+          lineNumber: 105,
+          columnNumber: 7
+        }, this)
+      ]
+    },
+    void 0,
+    true,
+    {
+      fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx",
+      lineNumber: 57,
+      columnNumber: 5
+    },
+    this
+  );
+}
+_s(AppFrame, "t/NuomB4OdESF7w4lSs5uH0KqGA=", false, function() {
+  return [useI18n];
+});
+_c = AppFrame;
+var _c;
+$RefreshReg$(_c, "AppFrame");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/AppFrame.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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O0FBQUEsaUJBUUEsSUFDRTtBQUFBLGFBcEJOO0FBQUE7QUFBQTtBQUFBO0FBQUEsZUFxQkEsS0F0QkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxlQXVCQTtBQUFBO0FBQUE7QUFBQSxJQXZFRjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsRUF3RUE7QUFFSjtBQUFDeEIsR0F0R2VMLFVBQVE7QUFBQSxVQU1GTCxPQUFPO0FBQUE7QUFBQSxLQU5iSztBQUFRLElBQUFpRDtBQUFBLGFBQUFBLElBQUEiLCJuYW1lcyI6WyJ1c2VNZW1vIiwidXNlSTE4biIsImZtdEludCIsImZtdE1tIiwiZm10VGFrYSIsIlBsYW5Cb2R5IiwiQXBwRnJhbWUiLCJsaXN0Iiwib3BlbiIsIm1ldGEiLCJuYW1lcyIsIl9zIiwidCIsImxhbmciLCJkaXZpc2lvbnMiLCJjb3VudHMiLCJNYXAiLCJkIiwiZGlzdHJpY3RzIiwiYyIsImdldCIsImRpdmlzaW9uX2VuIiwibGFiZWwiLCJkaXZpc2lvbl9ibiIsIm4iLCJzZXQiLCJmaXJzdCIsImRpc3RyaWN0IiwiZW50cmllcyIsInNvcnQiLCJhIiwiYiIsImxvY2FsZUNvbXBhcmUiLCJzbGljZSIsIm1hcCIsImtleSIsInYiLCJvbiIsImNhcmQiLCJzdHJhdGVnaWVzIiwiZmluZCIsInMiLCJyZWNvbW1lbmRlZF9zdHJhdGVneSIsImJhc2UiLCJpbml0aWFscyIsImxlbmd0aCIsInIiLCJpIiwiYmVzdCIsImNyb3BzIiwiY3JvcCIsImpvaW4iLCJtZXRyaWNzIiwicHJvZml0X2JkdF9iaWdoYSIsIndhdGVyX21tIiwiX2MiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiQXBwRnJhbWUudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IHVzZU1lbW8gfSBmcm9tICdyZWFjdCdcbmltcG9ydCB0eXBlIHsgTWV0YSwgUmVjb21tZW5kYXRpb24gfSBmcm9tICcuLi9hcGkvdHlwZXMnXG5pbXBvcnQgeyB1c2VJMThuIH0gZnJvbSAnLi4vaTE4bi9JMThuUHJvdmlkZXInXG5pbXBvcnQgeyBmbXRJbnQsIGZtdE1tLCBmbXRUYWthIH0gZnJvbSAnLi4vbGliL2Zvcm1hdCdcbmltcG9ydCB0eXBlIHsgTmFtZXMgfSBmcm9tICcuLi9saWIvbmFtZXMnXG5pbXBvcnQgeyBQbGFuQm9keSB9IGZyb20gJy4vUGxhbldpbmRvdydcblxuLyoqIFRoZSBwcm9kdWN0LCBiaWc6IG9uZSBhcHAgd2luZG93IGFjcm9zcyB0aGUgLndyYXAsIHRoZSBkaXN0cmljdCBsaXN0IGJlc2lkZSB0aGUgb3BlbiBwbGFuXG4gICAgKHNlY3Rpb25zLWxpYnJhcnkubWQsIGFwcC1mcmFtZSkuIEV2ZXJ5IHJvdyBhbmQgZmlndXJlIGlzIGEgbGl2ZSBBUEkgcmVzdWx0LiAqL1xuZXhwb3J0IGZ1bmN0aW9uIEFwcEZyYW1lKHsgbGlzdCwgb3BlbiwgbWV0YSwgbmFtZXMgfToge1xuICBsaXN0OiBSZWNvbW1lbmRhdGlvbltdXG4gIG9wZW46IFJlY29tbWVuZGF0aW9uIHwgdW5kZWZpbmVkXG4gIG1ldGE6IE1ldGEgfCB1bmRlZmluZWRcbiAgbmFtZXM6IE5hbWVzXG59KSB7XG4gIGNvbnN0IHsgdCwgbGFuZyB9ID0gdXNlSTE4bigpXG5cbiAgLy8gdGhlIHNpZGViYXIncyBkaXZpc2lvbnMgd2l0aCB0aGVpciByZWFsIGRpc3RyaWN0IGNvdW50cywgdGhlIG9wZW4gZGlzdHJpY3QncyBkaXZpc2lvbiBmaXJzdFxuICBjb25zdCBkaXZpc2lvbnMgPSB1c2VNZW1vKCgpID0+IHtcbiAgICBjb25zdCBjb3VudHMgPSBuZXcgTWFwPHN0cmluZywgeyBsYWJlbDogc3RyaW5nOyBuOiBudW1iZXIgfT4oKVxuICAgIGZvciAoY29uc3QgZCBvZiBtZXRhPy5kaXN0cmljdHMgPz8gW10pIHtcbiAgICAgIGNvbnN0IGMgPSBjb3VudHMuZ2V0KGQuZGl2aXNpb25fZW4pID8/IHsgbGFiZWw6IGxhbmcgPT09ICdibicgPyBkLmRpdmlzaW9uX2JuIDogZC5kaXZpc2lvbl9lbiwgbjogMCB9XG4gICAgICBjLm4gKz0gMVxuICAgICAgY291bnRzLnNldChkLmRpdmlzaW9uX2VuLCBjKVxuICAgIH1cbiAgICBjb25zdCBmaXJzdCA9IG9wZW4/LmRpc3RyaWN0LmRpdmlzaW9uX2VuXG4gICAgcmV0dXJuIFsuLi5jb3VudHMuZW50cmllcygpXVxuICAgICAgLnNvcnQoKFthXSwgW2JdKSA9PiAoYSA9PT0gZmlyc3QgPyAtMSA6IGIgPT09IGZpcnN0ID8gMSA6IGEubG9jYWxlQ29tcGFyZShiKSkpXG4gICAgICAuc2xpY2UoMCwgNClcbiAgICAgIC5tYXAoKFtrZXksIHZdKSA9PiAoeyBrZXksIC4uLnYsIG9uOiBrZXkgPT09IGZpcnN0IH0pKVxuICB9LCBbbWV0YSwgbGFuZywgb3Blbl0pXG5cbiAgY29uc3QgY2FyZCA9IG9wZW4/LnN0cmF0ZWdpZXMuZmluZCgocykgPT4gcy5rZXkgPT09IG9wZW4ucmVjb21tZW5kZWRfc3RyYXRlZ3kpXG4gIGNvbnN0IGJhc2UgPSBvcGVuPy5zdHJhdGVnaWVzLmZpbmQoKHMpID0+IHMua2V5ID09PSAnYmFzZWxpbmUnKVxuICBjb25zdCBpbml0aWFscyA9IChrZXk6IHN0cmluZykgPT4gbmFtZXMuZGlzdHJpY3Qoa2V5KS5zbGljZSgwLCAyKVxuXG4gIHJldHVybiAoXG4gICAgPGRpdlxuICAgICAgY2xhc3NOYW1lPVwidWkgYXBwIGZpbGxcIlxuICAgICAgcm9sZT1cImltZ1wiXG4gICAgICBhcmlhLWxhYmVsPXt0KCdleC5hcmlhJywgeyBkaXN0cmljdDogb3BlbiA/IG5hbWVzLmRpc3RyaWN0KG9wZW4uZGlzdHJpY3Qua2V5KSA6ICcnIH0pfVxuICAgID5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYXBwX19wYW5lIGFwcF9fcGFuZS0tbGlzdFwiPlxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInVpIHVpLXBhbmVsIHVpLXdpblwiIGFyaWEtaGlkZGVuPVwidHJ1ZVwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidWktd2luX19iYXJcIj5cbiAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInVpLWRvdHNcIj48aSAvPjxpIC8+PGkgLz48L3NwYW4+XG4gICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ1aS13aW5fX2NydW1iXCI+e3QoJ2FwcC5uYW1lJyl9IDxpPi88L2k+IDxiPnt0KCdleC5jcnVtYicpfTwvYj48L3NwYW4+XG4gICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ1aS1zcGFjZXJcIiAvPlxuICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidWktd2luX19zZWFyY2hcIj5cbiAgICAgICAgICAgICAgPHN2ZyBjbGFzc05hbWU9XCJ1aS1pY29uXCIgdmlld0JveD1cIjAgMCAxNiAxNlwiPjxjaXJjbGUgY3g9XCI3XCIgY3k9XCI3XCIgcj1cIjQuNVwiIC8+PHBhdGggZD1cIm0xMC41IDEwLjUgMyAzXCIgLz48L3N2Zz5cbiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidWktd2luX19waFwiPnt0KCdleC5zZWFyY2gnKX08L3NwYW4+XG4gICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ1aS13aW5fX2JvZHlcIj5cbiAgICAgICAgICAgIDxuYXYgY2xhc3NOYW1lPVwidWktd2luX19zaWRlXCI+XG4gICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInVpLXdpbl9fbmF2XCI+e3QoJ2V4LnNpZGUuYWxsJyl9PGVtPntmbXRJbnQobWV0YT8uZGlzdHJpY3RzLmxlbmd0aCA/PyA2NCwgbGFuZyl9PC9lbT48L3NwYW4+XG4gICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInVpLXdpbl9fbGFiZWxcIj57dCgnZXguc2lkZS5kaXZpc2lvbnMnKX08L3NwYW4+XG4gICAgICAgICAgICAgIHtkaXZpc2lvbnMubWFwKChkKSA9PiAoXG4gICAgICAgICAgICAgICAgPHNwYW4ga2V5PXtkLmtleX0gY2xhc3NOYW1lPXtgdWktd2luX19uYXYgJHtkLm9uID8gJ2lzLW9uJyA6ICcnfWB9PlxuICAgICAgICAgICAgICAgICAge2QubGFiZWx9PGVtPntmbXRJbnQoZC5uLCBsYW5nKX08L2VtPlxuICAgICAgICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICAgICAgKSl9XG4gICAgICAgICAgICA8L25hdj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidWktd2luX19tYWluXCI+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidWktd2luX19jb2xzXCI+PHNwYW4+e3QoJ2V4LmNvbC5kaXN0cmljdCcpfTwvc3Bhbj48c3Bhbj57dCgnZXguY29sLnBsYW4nKX08L3NwYW4+PHNwYW4+e3QoJ2V4LmNvbC5wcm9maXQnKX08L3NwYW4+PHNwYW4gLz48L2Rpdj5cbiAgICAgICAgICAgICAgPHVsIGNsYXNzTmFtZT1cInVpLXdpbl9fcm93c1wiPlxuICAgICAgICAgICAgICAgIHtsaXN0Lm1hcCgociwgaSkgPT4ge1xuICAgICAgICAgICAgICAgICAgY29uc3QgYmVzdCA9IHIuc3RyYXRlZ2llcy5maW5kKChzKSA9PiBzLmtleSA9PT0gci5yZWNvbW1lbmRlZF9zdHJhdGVneSlcbiAgICAgICAgICAgICAgICAgIGlmICghYmVzdCkgcmV0dXJuIG51bGxcbiAgICAgICAgICAgICAgICAgIGNvbnN0IG9uID0gci5kaXN0cmljdC5rZXkgPT09IG9wZW4/LmRpc3RyaWN0LmtleVxuICAgICAgICAgICAgICAgICAgcmV0dXJuIChcbiAgICAgICAgICAgICAgICAgICAgPGxpIGtleT17ci5kaXN0cmljdC5rZXl9IGNsYXNzTmFtZT17YHVpLXdpbl9fcm93ICR7b24gPyAnaXMtb24nIDogJyd9YH0+XG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidWktYXZhdGFyXCIgZGF0YS10b25lPXsoaSAlIDUpICsgMX0+e2luaXRpYWxzKHIuZGlzdHJpY3Qua2V5KX08L3NwYW4+XG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidWktd2luX193aG9cIj57bmFtZXMuZGlzdHJpY3Qoci5kaXN0cmljdC5rZXkpfTwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ1aS13aW5fX3N1YlwiPntiZXN0LmNyb3BzLm1hcCgoYykgPT4gbmFtZXMuY3JvcChjKSkuam9pbignIOKGkiAnKX08L3NwYW4+XG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPXtgdWktd2luX19zdCAke29uID8gJ2lzLXlvdScgOiAnaXMtZG9uZSd9YH0+e2ZtdFRha2EoYmVzdC5tZXRyaWNzLnByb2ZpdF9iZHRfYmlnaGEsIGxhbmcpfTwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ1aS13aW5fX2FnZVwiPntmbXRNbShiZXN0Lm1ldHJpY3Mud2F0ZXJfbW0sIGxhbmcpfTwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgPC9saT5cbiAgICAgICAgICAgICAgICAgIClcbiAgICAgICAgICAgICAgICB9KX1cbiAgICAgICAgICAgICAgPC91bD5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICA8L2Rpdj5cbiAgICAgIDwvZGl2PlxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJhcHBfX3BhbmUgYXBwX19wYW5lLS1vcGVuXCI+XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidWkgdWktcGFuZWwgZnMtb3BlblwiIGFyaWEtaGlkZGVuPVwidHJ1ZVwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZnMtd2luX19iYXJcIj5cbiAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImZzLXdpbl9fY3J1bWJcIj5cbiAgICAgICAgICAgICAgPGI+e29wZW4gPyBuYW1lcy5kaXN0cmljdChvcGVuLmRpc3RyaWN0LmtleSkgOiAn4oCmJ308L2I+XG4gICAgICAgICAgICAgIHtvcGVuID8gPGk+e2xhbmcgPT09ICdibicgPyBvcGVuLmRpc3RyaWN0LmRpdmlzaW9uX2JuIDogb3Blbi5kaXN0cmljdC5kaXZpc2lvbl9lbn08L2k+IDogbnVsbH1cbiAgICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInVpLXNwYWNlclwiIC8+XG4gICAgICAgICAgICB7Y2FyZCA/IDxzcGFuIGNsYXNzTmFtZT1cInVpLWNoaXAgdWktY2hpcC0tYWNjZW50XCI+e3QoYHN0cmF0ZWd5LiR7Y2FyZC5rZXl9YCl9PC9zcGFuPiA6IG51bGx9XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAge2NhcmQgPyA8UGxhbkJvZHkgY2FyZD17Y2FyZH0gYmFzZT17YmFzZX0gbmFtZXM9e25hbWVzfSAvPiA6IG51bGx9XG4gICAgICAgICAge29wZW4gPyAoXG4gICAgICAgICAgICA8dWwgY2xhc3NOYW1lPVwiZnMtb3RoZXJzXCI+XG4gICAgICAgICAgICAgIHtvcGVuLnN0cmF0ZWdpZXMubWFwKChzKSA9PiAoXG4gICAgICAgICAgICAgICAgPGxpIGtleT17cy5rZXl9IGNsYXNzTmFtZT17cy5rZXkgPT09IGNhcmQ/LmtleSA/ICdpcy1vbicgOiAnJ30+XG4gICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJmcy1vdGhlcnNfX25hbWVcIj57dChgc3RyYXRlZ3kuJHtzLmtleX1gKX08L3NwYW4+XG4gICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJmcy1vdGhlcnNfX2NoYWluXCI+e3MuY3JvcHMubWFwKChjKSA9PiBuYW1lcy5jcm9wKGMpKS5qb2luKCcg4oaSICcpfTwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImZzLW90aGVyc19fZmlnXCI+e2ZtdFRha2Eocy5tZXRyaWNzLnByb2ZpdF9iZHRfYmlnaGEsIGxhbmcpfTwvc3Bhbj5cbiAgICAgICAgICAgICAgICA8L2xpPlxuICAgICAgICAgICAgICApKX1cbiAgICAgICAgICAgIDwvdWw+XG4gICAgICAgICAgKSA6IG51bGx9XG4gICAgICAgIDwvZGl2PlxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gIClcbn1cbiJdLCJmaWxlIjoiWDovY29kZS9DT1NNSUNfUk9PVC1OQVNBX1NQQUNFX0FQUF8yMDI2L1JlYWN0L3NyYy9jb21wb25lbnRzL0FwcEZyYW1lLnRzeCJ9

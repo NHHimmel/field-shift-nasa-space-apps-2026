@@ -1,0 +1,203 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/RefineForm.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=32356488"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=32356488"; const useMemo = __vite__cjsImport3_react["useMemo"]; const useState = __vite__cjsImport3_react["useState"];
+import { useNavigate } from "/node_modules/.vite/deps/react-router-dom.js?v=32356488";
+import { SEASONS } from "/src/api/types.ts";
+import { useI18n } from "/src/i18n/I18nProvider.tsx?t=1794690757776";
+import { paramsFromRequest } from "/src/lib/query.ts";
+import { ChoiceGroup } from "/src/components/ChoiceGroup.tsx";
+export function RefineForm({ req, meta, names }) {
+  _s();
+  const { t } = useI18n();
+  const navigate = useNavigate();
+  const [soil, setSoil] = useState(req.soil_fertility);
+  const [current, setCurrent] = useState(req.current_crops);
+  const [excluded, setExcluded] = useState(req.excluded_crops);
+  const avoidable = useMemo(() => {
+    const all = /* @__PURE__ */ new Set();
+    for (const s of SEASONS) for (const c of meta?.season_crops[s] ?? []) if (c !== "Fallow") all.add(c);
+    return [...all];
+  }, [meta]);
+  const currentValue = (s) => current?.[s] ?? meta?.default_current_crops[s] ?? "";
+  function onSubmit(e) {
+    e.preventDefault();
+    const next = { ...req, soil_fertility: soil, current_crops: current, excluded_crops: excluded };
+    navigate(`/result?${paramsFromRequest(next).toString()}`);
+  }
+  return /* @__PURE__ */ jsxDEV("section", { className: "card refine no-print", "aria-labelledby": "refine-h", children: [
+    /* @__PURE__ */ jsxDEV("h2", { id: "refine-h", children: t("refine.title") }, void 0, false, {
+      fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+      lineNumber: 53,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("p", { children: t("refine.p") }, void 0, false, {
+      fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+      lineNumber: 54,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("form", { className: "fs-form fs-form--flat", onSubmit, children: [
+      /* @__PURE__ */ jsxDEV(
+        ChoiceGroup,
+        {
+          name: "soil",
+          legend: t("home.soil"),
+          value: soil,
+          onChange: setSoil,
+          choices: ["low", "medium", "high", "unknown"].map((s) => ({ value: s, label: t(`soil.${s}`) }))
+        },
+        void 0,
+        false,
+        {
+          fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+          lineNumber: 56,
+          columnNumber: 9
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV("fieldset", { className: "fs-current", children: [
+        /* @__PURE__ */ jsxDEV("legend", { children: t("home.current") }, void 0, false, {
+          fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+          lineNumber: 64,
+          columnNumber: 11
+        }, this),
+        SEASONS.map(
+          (s) => /* @__PURE__ */ jsxDEV("div", { className: "fs-field fs-field--row", children: [
+            /* @__PURE__ */ jsxDEV("label", { htmlFor: `f-cur-${s}`, children: [
+              t(`season.${s}`),
+              " ",
+              /* @__PURE__ */ jsxDEV("span", { className: "muted", children: t(`season.${s}.sub`) }, void 0, false, {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+                lineNumber: 67,
+                columnNumber: 64
+              }, this)
+            ] }, void 0, true, {
+              fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+              lineNumber: 67,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "select",
+              {
+                id: `f-cur-${s}`,
+                value: currentValue(s),
+                onChange: (e) => setCurrent({ ...current ?? meta.default_current_crops, [s]: e.target.value }),
+                disabled: !meta,
+                children: (meta?.season_crops[s] ?? []).map((c) => /* @__PURE__ */ jsxDEV("option", { value: c, children: names.crop(c) }, c, false, {
+                  fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+                  lineNumber: 74,
+                  columnNumber: 59
+                }, this))
+              },
+              void 0,
+              false,
+              {
+                fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+                lineNumber: 68,
+                columnNumber: 15
+              },
+              this
+            )
+          ] }, s, true, {
+            fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+            lineNumber: 66,
+            columnNumber: 11
+          }, this)
+        )
+      ] }, void 0, true, {
+        fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+        lineNumber: 63,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("fieldset", { children: [
+        /* @__PURE__ */ jsxDEV("legend", { children: t("home.avoid") }, void 0, false, {
+          fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+          lineNumber: 80,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "fs-chips", children: avoidable.map((c) => {
+          const on = excluded.includes(c);
+          return /* @__PURE__ */ jsxDEV(
+            "button",
+            {
+              type: "button",
+              className: "fs-chip",
+              "aria-pressed": on,
+              onClick: () => setExcluded(on ? excluded.filter((x) => x !== c) : [...excluded, c]),
+              children: names.crop(c)
+            },
+            c,
+            false,
+            {
+              fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+              lineNumber: 85,
+              columnNumber: 17
+            },
+            this
+          );
+        }) }, void 0, false, {
+          fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+          lineNumber: 81,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+        lineNumber: 79,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "btn-row", children: /* @__PURE__ */ jsxDEV("button", { className: "btn btn--primary", type: "submit", children: t("refine.submit") }, void 0, false, {
+        fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+        lineNumber: 99,
+        columnNumber: 11
+      }, this) }, void 0, false, {
+        fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+        lineNumber: 98,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+      lineNumber: 55,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx",
+    lineNumber: 52,
+    columnNumber: 5
+  }, this);
+}
+_s(RefineForm, "nrTKLbFUA3C/6IWmeZwVrCGjrqs=", false, function() {
+  return [useI18n, useNavigate];
+});
+_c = RefineForm;
+var _c;
+$RefreshReg$(_c, "RefineForm");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("X:/code/COSMIC_ROOT-NASA_SPACE_APP_2026/React/src/components/RefineForm.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QUFBO0FBQUE7QUFBQSxVQVFBO0FBQUEsUUFFSixDQUFDLEtBZEg7QUFBQTtBQUFBO0FBQUE7QUFBQSxlQWVBO0FBQUEsV0FqQkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQWtCQTtBQUFBLE1BQ0EsdUJBQUMsU0FBSSxXQUFVLFdBQ2IsaUNBQUMsWUFBTyxXQUFVLG9CQUFtQixNQUFLLFVBQVVmLFlBQUUsZUFBZSxLQUFyRTtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBQXVFLEtBRHpFO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFFQTtBQUFBLFNBN0NGO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0E4Q0E7QUFBQSxPQWpERjtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBa0RBO0FBRUo7QUFBQ0QsR0ExRWVKLFlBQVU7QUFBQSxVQUNWSCxTQUNHRixXQUFXO0FBQUE7QUFBQSxLQUZkSztBQUFVLElBQUF1QztBQUFBLGFBQUFBLElBQUEiLCJuYW1lcyI6WyJ1c2VNZW1vIiwidXNlU3RhdGUiLCJ1c2VOYXZpZ2F0ZSIsIlNFQVNPTlMiLCJ1c2VJMThuIiwicGFyYW1zRnJvbVJlcXVlc3QiLCJDaG9pY2VHcm91cCIsIlJlZmluZUZvcm0iLCJyZXEiLCJtZXRhIiwibmFtZXMiLCJfcyIsInQiLCJuYXZpZ2F0ZSIsInNvaWwiLCJzZXRTb2lsIiwic29pbF9mZXJ0aWxpdHkiLCJjdXJyZW50Iiwic2V0Q3VycmVudCIsImN1cnJlbnRfY3JvcHMiLCJleGNsdWRlZCIsInNldEV4Y2x1ZGVkIiwiZXhjbHVkZWRfY3JvcHMiLCJhdm9pZGFibGUiLCJhbGwiLCJTZXQiLCJzIiwiYyIsInNlYXNvbl9jcm9wcyIsImFkZCIsImN1cnJlbnRWYWx1ZSIsImRlZmF1bHRfY3VycmVudF9jcm9wcyIsIm9uU3VibWl0IiwiZSIsInByZXZlbnREZWZhdWx0IiwibmV4dCIsInRvU3RyaW5nIiwibWFwIiwidmFsdWUiLCJsYWJlbCIsInRhcmdldCIsImNyb3AiLCJvbiIsImluY2x1ZGVzIiwiZmlsdGVyIiwieCIsIl9jIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIlJlZmluZUZvcm0udHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IHVzZU1lbW8sIHVzZVN0YXRlLCB0eXBlIEZvcm1FdmVudCB9IGZyb20gJ3JlYWN0J1xuaW1wb3J0IHsgdXNlTmF2aWdhdGUgfSBmcm9tICdyZWFjdC1yb3V0ZXItZG9tJ1xuaW1wb3J0IHsgU0VBU09OUywgdHlwZSBNZXRhLCB0eXBlIFJlY29tbWVuZFJlcXVlc3QsIHR5cGUgU2Vhc29uS2V5LCB0eXBlIFNvaWxMZXZlbCB9IGZyb20gJy4uL2FwaS90eXBlcydcbmltcG9ydCB7IHVzZUkxOG4gfSBmcm9tICcuLi9pMThuL0kxOG5Qcm92aWRlcidcbmltcG9ydCB0eXBlIHsgTmFtZXMgfSBmcm9tICcuLi9saWIvbmFtZXMnXG5pbXBvcnQgeyBwYXJhbXNGcm9tUmVxdWVzdCB9IGZyb20gJy4uL2xpYi9xdWVyeSdcbmltcG9ydCB7IENob2ljZUdyb3VwIH0gZnJvbSAnLi9DaG9pY2VHcm91cCdcblxuLyoqIFRoZSBvcHRpb25hbCBhbnN3ZXJzIChzb2lsLCB0aGUgY3JvcHMgZ3Jvd24gbm93LCBjcm9wcyB0byBsZWF2ZSBvdXQpLCBhc2tlZCBvbmNlIGEgcGxhbiBpcyBvblxuICAgIHNjcmVlbiwgc28gdGhlIGhvbWUgcGFnZSdzIGZvcm0gc3RheXMgdGhyZWUgYW5zd2VycyBsb25nLiBTdWJtaXR0aW5nIHJlbG9hZHMgdGhlIHBsYW4ncyBsaW5rLiAqL1xuZXhwb3J0IGZ1bmN0aW9uIFJlZmluZUZvcm0oeyByZXEsIG1ldGEsIG5hbWVzIH06IHsgcmVxOiBSZWNvbW1lbmRSZXF1ZXN0OyBtZXRhOiBNZXRhIHwgdW5kZWZpbmVkOyBuYW1lczogTmFtZXMgfSkge1xuICBjb25zdCB7IHQgfSA9IHVzZUkxOG4oKVxuICBjb25zdCBuYXZpZ2F0ZSA9IHVzZU5hdmlnYXRlKClcbiAgY29uc3QgW3NvaWwsIHNldFNvaWxdID0gdXNlU3RhdGU8U29pbExldmVsPihyZXEuc29pbF9mZXJ0aWxpdHkpXG4gIGNvbnN0IFtjdXJyZW50LCBzZXRDdXJyZW50XSA9IHVzZVN0YXRlPFJlY29yZDxTZWFzb25LZXksIHN0cmluZz4gfCBudWxsPihyZXEuY3VycmVudF9jcm9wcylcbiAgY29uc3QgW2V4Y2x1ZGVkLCBzZXRFeGNsdWRlZF0gPSB1c2VTdGF0ZTxzdHJpbmdbXT4ocmVxLmV4Y2x1ZGVkX2Nyb3BzKVxuXG4gIGNvbnN0IGF2b2lkYWJsZSA9IHVzZU1lbW8oKCkgPT4ge1xuICAgIGNvbnN0IGFsbCA9IG5ldyBTZXQ8c3RyaW5nPigpXG4gICAgZm9yIChjb25zdCBzIG9mIFNFQVNPTlMpIGZvciAoY29uc3QgYyBvZiBtZXRhPy5zZWFzb25fY3JvcHNbc10gPz8gW10pIGlmIChjICE9PSAnRmFsbG93JykgYWxsLmFkZChjKVxuICAgIHJldHVybiBbLi4uYWxsXVxuICB9LCBbbWV0YV0pXG5cbiAgY29uc3QgY3VycmVudFZhbHVlID0gKHM6IFNlYXNvbktleSkgPT4gY3VycmVudD8uW3NdID8/IG1ldGE/LmRlZmF1bHRfY3VycmVudF9jcm9wc1tzXSA/PyAnJ1xuXG4gIGZ1bmN0aW9uIG9uU3VibWl0KGU6IEZvcm1FdmVudCkge1xuICAgIGUucHJldmVudERlZmF1bHQoKVxuICAgIGNvbnN0IG5leHQgPSB7IC4uLnJlcSwgc29pbF9mZXJ0aWxpdHk6IHNvaWwsIGN1cnJlbnRfY3JvcHM6IGN1cnJlbnQsIGV4Y2x1ZGVkX2Nyb3BzOiBleGNsdWRlZCB9XG4gICAgbmF2aWdhdGUoYC9yZXN1bHQ/JHtwYXJhbXNGcm9tUmVxdWVzdChuZXh0KS50b1N0cmluZygpfWApXG4gIH1cblxuICByZXR1cm4gKFxuICAgIDxzZWN0aW9uIGNsYXNzTmFtZT1cImNhcmQgcmVmaW5lIG5vLXByaW50XCIgYXJpYS1sYWJlbGxlZGJ5PVwicmVmaW5lLWhcIj5cbiAgICAgIDxoMiBpZD1cInJlZmluZS1oXCI+e3QoJ3JlZmluZS50aXRsZScpfTwvaDI+XG4gICAgICA8cD57dCgncmVmaW5lLnAnKX08L3A+XG4gICAgICA8Zm9ybSBjbGFzc05hbWU9XCJmcy1mb3JtIGZzLWZvcm0tLWZsYXRcIiBvblN1Ym1pdD17b25TdWJtaXR9PlxuICAgICAgICA8Q2hvaWNlR3JvdXA8U29pbExldmVsPlxuICAgICAgICAgIG5hbWU9XCJzb2lsXCJcbiAgICAgICAgICBsZWdlbmQ9e3QoJ2hvbWUuc29pbCcpfVxuICAgICAgICAgIHZhbHVlPXtzb2lsfVxuICAgICAgICAgIG9uQ2hhbmdlPXtzZXRTb2lsfVxuICAgICAgICAgIGNob2ljZXM9eyhbJ2xvdycsICdtZWRpdW0nLCAnaGlnaCcsICd1bmtub3duJ10gYXMgU29pbExldmVsW10pLm1hcCgocykgPT4gKHsgdmFsdWU6IHMsIGxhYmVsOiB0KGBzb2lsLiR7c31gKSB9KSl9XG4gICAgICAgIC8+XG4gICAgICAgIDxmaWVsZHNldCBjbGFzc05hbWU9XCJmcy1jdXJyZW50XCI+XG4gICAgICAgICAgPGxlZ2VuZD57dCgnaG9tZS5jdXJyZW50Jyl9PC9sZWdlbmQ+XG4gICAgICAgICAge1NFQVNPTlMubWFwKChzKSA9PiAoXG4gICAgICAgICAgICA8ZGl2IGtleT17c30gY2xhc3NOYW1lPVwiZnMtZmllbGQgZnMtZmllbGQtLXJvd1wiPlxuICAgICAgICAgICAgICA8bGFiZWwgaHRtbEZvcj17YGYtY3VyLSR7c31gfT57dChgc2Vhc29uLiR7c31gKX0gPHNwYW4gY2xhc3NOYW1lPVwibXV0ZWRcIj57dChgc2Vhc29uLiR7c30uc3ViYCl9PC9zcGFuPjwvbGFiZWw+XG4gICAgICAgICAgICAgIDxzZWxlY3RcbiAgICAgICAgICAgICAgICBpZD17YGYtY3VyLSR7c31gfVxuICAgICAgICAgICAgICAgIHZhbHVlPXtjdXJyZW50VmFsdWUocyl9XG4gICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRDdXJyZW50KHsgLi4uKGN1cnJlbnQgPz8gbWV0YSEuZGVmYXVsdF9jdXJyZW50X2Nyb3BzKSwgW3NdOiBlLnRhcmdldC52YWx1ZSB9KX1cbiAgICAgICAgICAgICAgICBkaXNhYmxlZD17IW1ldGF9XG4gICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICB7KG1ldGE/LnNlYXNvbl9jcm9wc1tzXSA/PyBbXSkubWFwKChjKSA9PiA8b3B0aW9uIGtleT17Y30gdmFsdWU9e2N9PntuYW1lcy5jcm9wKGMpfTwvb3B0aW9uPil9XG4gICAgICAgICAgICAgIDwvc2VsZWN0PlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgKSl9XG4gICAgICAgIDwvZmllbGRzZXQ+XG4gICAgICAgIDxmaWVsZHNldD5cbiAgICAgICAgICA8bGVnZW5kPnt0KCdob21lLmF2b2lkJyl9PC9sZWdlbmQ+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmcy1jaGlwc1wiPlxuICAgICAgICAgICAge2F2b2lkYWJsZS5tYXAoKGMpID0+IHtcbiAgICAgICAgICAgICAgY29uc3Qgb24gPSBleGNsdWRlZC5pbmNsdWRlcyhjKVxuICAgICAgICAgICAgICByZXR1cm4gKFxuICAgICAgICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgICAgICAgIHR5cGU9XCJidXR0b25cIlxuICAgICAgICAgICAgICAgICAga2V5PXtjfVxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiZnMtY2hpcFwiXG4gICAgICAgICAgICAgICAgICBhcmlhLXByZXNzZWQ9e29ufVxuICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0RXhjbHVkZWQob24gPyBleGNsdWRlZC5maWx0ZXIoKHgpID0+IHggIT09IGMpIDogWy4uLmV4Y2x1ZGVkLCBjXSl9XG4gICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAge25hbWVzLmNyb3AoYyl9XG4gICAgICAgICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgICAgIClcbiAgICAgICAgICAgIH0pfVxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICA8L2ZpZWxkc2V0PlxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImJ0bi1yb3dcIj5cbiAgICAgICAgICA8YnV0dG9uIGNsYXNzTmFtZT1cImJ0biBidG4tLXByaW1hcnlcIiB0eXBlPVwic3VibWl0XCI+e3QoJ3JlZmluZS5zdWJtaXQnKX08L2J1dHRvbj5cbiAgICAgICAgPC9kaXY+XG4gICAgICA8L2Zvcm0+XG4gICAgPC9zZWN0aW9uPlxuICApXG59XG4iXSwiZmlsZSI6Ilg6L2NvZGUvQ09TTUlDX1JPT1QtTkFTQV9TUEFDRV9BUFBfMjAyNi9SZWFjdC9zcmMvY29tcG9uZW50cy9SZWZpbmVGb3JtLnRzeCJ9

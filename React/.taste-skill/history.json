@@ -1,0 +1,25 @@
+{
+ "palettes": [
+  "teal-on-paper"
+ ],
+ "types": [
+  "gabarito"
+ ],
+ "dealt": [
+  "gabarito",
+  "funnel",
+  "geist"
+ ],
+ "moments": [
+  {
+   "id": "liquid-type",
+   "at": "2026-11-14T20:11:51.069Z",
+   "seed": "bff2163a"
+  },
+  {
+   "id": "counter-rolls",
+   "at": "2026-11-14T20:11:51.069Z",
+   "seed": "bff2163a"
+  }
+ ]
+}

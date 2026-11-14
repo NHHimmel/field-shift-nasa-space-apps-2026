@@ -72,6 +72,21 @@ export default function Home() {
 
   const currentValue = (s: SeasonKey) => current?.[s] ?? meta.data?.default_current_crops[s] ?? ''
 
+<<<<<<< HEAD
+  function loadDemo() {
+    const demo = meta.data?.districts.find((d) => d.key.toLowerCase() === 'rajshahi') ?? meta.data?.districts[0]
+    if (!demo) return
+    setDistrict(demo.key)
+    setIrr(demo.default_irrigation ? 'yes' : 'no')
+    setPriority('balanced')
+    setSoil('medium')
+    setCurrent(null)
+    setExcluded([])
+    setShowError(false)
+  }
+
+=======
+>>>>>>> parent of 630a375 (clean ui)
   return (
     <div className="home">
       <section className="hero">
@@ -161,7 +176,17 @@ export default function Home() {
                 </select>
               </label>
             ))}
+<<<<<<< HEAD
+          </select>
+          {showError && !district ? <span className="error small">{t('home.needDistrict')}</span> : null}
+          {meta.data ? <button type="button" className="link demo-link" onClick={loadDemo}>▶ {t('home.demo')}</button> : null}
+          {meta.status === 'error' ? (
+            <span className="error small">{t('res.error')} <button type="button" className="link" onClick={meta.retry}>{t('res.retry')}</button></span>
+          ) : null}
+        </label>
+=======
           </fieldset>
+>>>>>>> parent of 630a375 (clean ui)
 
           <fieldset>
             <legend>{t('home.avoid')}</legend>

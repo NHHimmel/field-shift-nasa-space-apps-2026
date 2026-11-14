@@ -11,6 +11,9 @@ wheels/
 
 # Local secrets and runtime state
 .env
+.env.example
+.agents
+.claude
 data/cache/
 nasa_cache/
 
