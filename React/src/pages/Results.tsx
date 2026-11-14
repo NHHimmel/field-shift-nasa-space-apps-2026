@@ -4,6 +4,7 @@ import { getMeta, getRecommendation } from '../api/client'
 import { PRIORITIES, type StrategyKey } from '../api/types'
 import { Explanation } from '../components/Explanation'
 import { EvidencePanel } from '../components/EvidencePanel'
+import { EvidencePanel } from '../components/EvidencePanel'
 import { CompareList, CropCalendar, RangeBar, ScenarioPanel, StressChart } from '../components/Insights'
 import { SeasonTiles, StatTiles } from '../components/PlanSummary'
 import { useI18n } from '../i18n/I18nProvider'
@@ -47,10 +48,7 @@ export default function Results() {
     return rec.status === 'error' ? (
       <div className="card center">
         <p className="error">{t('res.error')}</p>
-<<<<<<< HEAD
         {rec.error instanceof Error && rec.error.message ? <p className="muted small">{rec.error.message}</p> : null}
-=======
->>>>>>> parent of 630a375 (clean ui)
         <button className="primary" onClick={rec.retry}>{t('res.retry')}</button>
       </div>
     ) : (
