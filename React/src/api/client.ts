@@ -1,4 +1,4 @@
-import type { Explanation, Lang, Meta, Recommendation, RecommendRequest, StrategyKey } from './types'
+import type { Explanation, Health, Lang, Meta, Recommendation, RecommendRequest, StrategyKey } from './types'
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -35,6 +35,10 @@ export function getMeta(): Promise<Meta> {
     })
   }
   return metaPromise
+}
+
+export function getHealth(): Promise<Health> {
+  return request<Health>('/api/health')
 }
 
 export function getRecommendation(req: RecommendRequest, signal?: AbortSignal): Promise<Recommendation> {

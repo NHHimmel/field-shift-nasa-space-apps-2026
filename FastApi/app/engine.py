@@ -54,6 +54,29 @@ STRATEGY_MODES: List[Tuple[str, str]] = [
     ("high_value_vegetable", "veg"),
 ]
 
+NASA_SOURCES: List[Dict[str, str]] = [
+    {
+        "name": "NASA POWER",
+        "role": "daily rainfall and weather history",
+        "status": "active",
+    },
+    {
+        "name": "NASA SMAP",
+        "role": "root-zone soil wetness feature",
+        "status": "derived",
+    },
+    {
+        "name": "NASA GRACE / GRACE-FO",
+        "role": "groundwater percentile and drought context",
+        "status": "derived",
+    },
+    {
+        "name": "NASA MODIS / ECOSTRESS",
+        "role": "evapotranspiration demand feature",
+        "status": "derived",
+    },
+]
+
 SCENARIOS: List[Dict[str, Any]] = [
     {"id": "normal", "rain_pct": 0.0, "temp_c": 0.0, "gw_pct": 0.0},
     {"id": "drought", "rain_pct": -25.0, "temp_c": 1.5, "gw_pct": -10.0},
@@ -160,6 +183,22 @@ def _policy_model() -> Optional[Any]:
 def policy_status() -> str:
     _policy_model()
     return _policy_state["note"]
+
+
+def inference_info(stress_source: str) -> Dict[str, Any]:
+    """Return the method actually used, so the UI cannot overstate model usage."""
+    _policy_model()
+    checkpoint = settings.policy_checkpoint
+    return {
+        # The live website currently evaluates candidate rotations with the
+        # structured simulator. The neural checkpoint is used only for stress
+        # windows until a compatible policy is retrained and wired into this path.
+        "recommendation_method": "deterministic_rotation_search",
+        "neural_policy_used": False,
+        "policy_status": _policy_state["note"],
+        "stress_window_source": stress_source,
+        "checkpoint_name": checkpoint.name if checkpoint.exists() else None,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -382,6 +421,7 @@ def _compute(
                 rows.append({"key": key, "crops": _crop_keys(ev), "metrics": _metrics(ev, sc_base)})
         scenarios.append({**sc, "strategies": rows})
 
+    stress_windows = _stress_windows(daily_seqs)
     return {
         "district": district_info(district),
         "inputs": {
@@ -392,7 +432,7 @@ def _compute(
         },
         "strategies": strategies,
         "scenarios": scenarios,
-        "stress_windows": _stress_windows(daily_seqs),
+        "stress_windows": stress_windows,
         "units": {
             "currency": "BDT",
             "area": "bigha",
@@ -403,6 +443,8 @@ def _compute(
             "climate_years": [settings.climate_start_year, settings.climate_end_year],
             "latest_year": settings.climate_end_year,
             "crop_catalog_size": rl.NUM_CROPS,
+            "nasa_sources": NASA_SOURCES,
+            "inference": inference_info(stress_windows["source"]),
         },
     }
 

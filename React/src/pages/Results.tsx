@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { getMeta, getRecommendation } from '../api/client'
 import { PRIORITIES, type StrategyKey } from '../api/types'
 import { Explanation } from '../components/Explanation'
+import { EvidencePanel } from '../components/EvidencePanel'
 import { CompareList, CropCalendar, RangeBar, ScenarioPanel, StressChart } from '../components/Insights'
 import { SeasonTiles, StatTiles } from '../components/PlanSummary'
 import { useI18n } from '../i18n/I18nProvider'
@@ -46,6 +47,7 @@ export default function Results() {
     return rec.status === 'error' ? (
       <div className="card center">
         <p className="error">{t('res.error')}</p>
+        {rec.error instanceof Error && rec.error.message ? <p className="muted small">{rec.error.message}</p> : null}
         <button className="primary" onClick={rec.retry}>{t('res.retry')}</button>
       </div>
     ) : (
@@ -57,8 +59,12 @@ export default function Results() {
     )
   }
 
-  const strategy: StrategyKey = selected ?? data.recommended_strategy
-  const card = data.strategies.find((s) => s.key === strategy)!
+  const requestedStrategy: StrategyKey = selected ?? data.recommended_strategy
+  const card = data.strategies.find((s) => s.key === requestedStrategy) ?? data.strategies[0]
+  if (!card) {
+    return <div className="card center"><p className="error">{t('res.error')}</p></div>
+  }
+  const strategy = card.key
   const tabs = [data.recommended_strategy, ...PRIORITIES.filter((p) => p !== data.recommended_strategy)]
 
   async function share() {
@@ -111,6 +117,7 @@ export default function Results() {
       </section>
 
       <Explanation req={req} strategy={strategy} />
+      <EvidencePanel rec={data} />
       <RangeBar card={card} years={data.data_info.climate_years} />
       <CropCalendar card={card} names={names} />
       <ScenarioPanel rec={data} strategy={strategy} names={names} />

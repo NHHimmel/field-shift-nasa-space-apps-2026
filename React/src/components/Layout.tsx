@@ -2,7 +2,15 @@ import { Link, NavLink } from 'react-router-dom'
 import { useI18n } from '../i18n/I18nProvider'
 import { fmtInt } from '../lib/format'
 
-export function Header() {
+type ApiStatus = 'loading' | 'ok' | 'error'
+
+function ApiStatusPill({ status }: { status: ApiStatus }) {
+  const { t } = useI18n()
+  const label = status === 'ok' ? t('status.connected') : status === 'error' ? t('status.unavailable') : t('status.checking')
+  return <span className={`api-status ${status}`} title={label}><span aria-hidden>●</span> {label}</span>
+}
+
+export function Header({ apiStatus = 'loading' }: { apiStatus?: ApiStatus }) {
   const { t, lang, setLang } = useI18n()
   return (
     <header className="header">
@@ -14,14 +22,17 @@ export function Header() {
             <small>{t('app.tagline')}</small>
           </span>
         </Link>
-        <div className="lang-toggle" role="group" aria-label={t('lang.label')}>
-          <button className={lang === 'bn' ? 'on' : ''} onClick={() => setLang('bn')} lang="bn">
-            বাংলা
-          </button>
-          <button className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')} lang="en">
-            English
-          </button>
-        </div>
+        <span className="header-actions">
+          <ApiStatusPill status={apiStatus} />
+          <span className="lang-toggle" role="group" aria-label={t('lang.label')}>
+            <button className={lang === 'bn' ? 'on' : ''} onClick={() => setLang('bn')} lang="bn">
+              বাংলা
+            </button>
+            <button className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')} lang="en">
+              English
+            </button>
+          </span>
+        </span>
       </div>
       <nav className="container nav">
         <NavLink to="/" end>
@@ -33,13 +44,14 @@ export function Header() {
   )
 }
 
-export function Footer({ rate }: { rate?: number }) {
+export function Footer({ rate, apiStatus = 'loading' }: { rate?: number; apiStatus?: ApiStatus }) {
   const { t, lang } = useI18n()
   return (
     <footer className="footer">
       <div className="container">
         <p className="advisory">⚠️ {t('advisory')}</p>
         {rate ? <p className="muted small">{t('footer.units', { rate: fmtInt(rate, lang) })}</p> : null}
+        <p className="muted small"><ApiStatusPill status={apiStatus} /></p>
         <p className="muted small">{t('footer.made')}</p>
       </div>
     </footer>

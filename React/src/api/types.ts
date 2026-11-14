@@ -40,6 +40,13 @@ export interface Meta {
   units: { usd_to_bdt: number; ha_per_bigha: number }
 }
 
+export interface Health {
+  ok: boolean
+  gemini_configured: boolean
+  gemini_model: string
+  policy_model: string
+}
+
 export interface Pest {
   kind: 'broken' | 'repeat' | 'fallow' | 'first'
   from?: string | null
@@ -134,8 +141,28 @@ export interface Recommendation {
   scenarios: Scenario[]
   stress_windows: { source: 'trained_attention' | 'physics_proxy'; seasons: StressSeason[] }
   units: { currency: string; area: string; usd_to_bdt: number; ha_per_bigha: number }
-  data_info: { climate_years: [number, number]; latest_year: number; crop_catalog_size: number }
+  data_info: {
+    climate_years: [number, number]
+    latest_year: number
+    crop_catalog_size: number
+    nasa_sources?: NASADataSource[]
+    inference?: InferenceInfo
+  }
   recommended_strategy: Priority
+}
+
+export interface NASADataSource {
+  name: string
+  role: string
+  status: 'active' | 'derived' | 'fallback'
+}
+
+export interface InferenceInfo {
+  recommendation_method: 'deterministic_rotation_search' | 'trained_neural_policy'
+  neural_policy_used: boolean
+  policy_status: string
+  stress_window_source: 'trained_attention' | 'physics_proxy'
+  checkpoint_name?: string | null
 }
 
 export interface RecommendRequest {
