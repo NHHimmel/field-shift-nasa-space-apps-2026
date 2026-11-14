@@ -3,10 +3,10 @@ Field Shift: Multi-District 20-Year NASA Earth Observation Dataset & Cache Build
 
 Provides:
 1. Bulk multi-decade (e.g., 2005-2024, 20 years) daily agroclimatology fetching from
-   the NASA POWER REST API across 8 core agricultural districts in Northwest Bangladesh.
+   the NASA POWER REST API across all 64 districts of Bangladesh.
 2. Automatic local CSV caching (`data/cache/<farm_id>_<start>_<end>.csv`) so 20-year
-   daily datasets (~7,300 days x 16 features per district = ~58,400 daily records)
-   are downloaded in a single HTTP request per district and reused instantaneously.
+   daily datasets (~7,300 days x 64 districts) are downloaded in one HTTP request per
+   district and reused instantaneously through the local cache.
 3. Realistic agro-climatic generator fallback when offline, preserving exact seasonal
    monsoon, winter dry-spell, and Barind groundwater dynamics.
 4. Direct conversion of multi-year daily DataFrames into fixed-length 3D daily tensors
@@ -17,6 +17,8 @@ Provides:
 from __future__ import annotations
 
 import logging
+import re
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple, Union
@@ -24,6 +26,8 @@ from typing import Dict, List, Optional, Sequence, Tuple, Union
 import numpy as np
 import pandas as pd
 import requests
+
+from .district_catalog import DISTRICT_METADATA
 
 logger = logging.getLogger("field_shift_nasa")
 if not logger.handlers:
@@ -46,17 +50,74 @@ class FarmLocation:
     farmer_priority: str = "balanced"
 
 
-# 8 Representative Agricultural Districts across Northwest Bangladesh
-NW_BANGLADESH_DISTRICTS: List[FarmLocation] = [
-    FarmLocation("bd_rajshahi", 24.3745, 88.6042, "Rajshahi", "High Barind Tract (AEZ-26)", 22.0, irrigation_access=True),
-    FarmLocation("bd_chapai", 24.5965, 88.2775, "Chapai Nawabganj", "High Barind Tract (AEZ-26)", 18.0, irrigation_access=False),
-    FarmLocation("bd_naogaon", 24.7936, 88.9318, "Naogaon", "Level Barind Tract (AEZ-25)", 24.0, irrigation_access=True),
-    FarmLocation("bd_bogura", 24.8481, 89.3730, "Bogura", "Karatoya-Bangali Floodplain (AEZ-4)", 38.0, irrigation_access=True),
-    FarmLocation("bd_dinajpur", 25.6217, 88.6354, "Dinajpur", "Old Himalayan Piedmont Plain (AEZ-1)", 34.0, irrigation_access=True),
-    FarmLocation("bd_rangpur", 25.7439, 89.2752, "Rangpur", "Tista Meander Floodplain (AEZ-3)", 45.0, irrigation_access=True),
-    FarmLocation("bd_pabna", 24.0063, 89.2372, "Pabna", "High Ganges River Floodplain (AEZ-11)", 32.0, irrigation_access=True),
-    FarmLocation("bd_kurigram", 25.8054, 89.6362, "Kurigram", "Active Tista Floodplain (AEZ-2)", 58.0, irrigation_access=True),
-]
+def _district_farm_id(district_name: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "_", district_name.lower()).strip("_")
+    return f"bd_{slug}"
+
+
+def build_bangladesh_districts() -> List[FarmLocation]:
+    """Build NASA-ready farm locations from the shared 64-district catalog."""
+    return [
+        FarmLocation(
+            farm_id=_district_farm_id(district_name),
+            latitude=latitude,
+            longitude=longitude,
+            district_name=district_name,
+            aez_zone=aez_zone,
+            groundwater_baseline_pctl=groundwater_pctl,
+            irrigation_access=groundwater_pctl >= 22.0,
+        )
+        for district_name, (_division, aez_zone, latitude, longitude, groundwater_pctl)
+        in DISTRICT_METADATA.items()
+    ]
+
+
+# Single 64-district catalog used by NASA feature extraction and RL integration.
+BANGLADESH_DISTRICTS: List[FarmLocation] = build_bangladesh_districts()
+
+
+def load_bangladesh_districts(db_path: Optional[Union[str, Path]] = None) -> List[FarmLocation]:
+    """Load district metadata from SQLite, falling back to the shared 64-district catalog."""
+    if db_path is None:
+        return list(BANGLADESH_DISTRICTS)
+
+    database_path = Path(db_path)
+    if not database_path.exists():
+        return list(BANGLADESH_DISTRICTS)
+
+    try:
+        with sqlite3.connect(str(database_path)) as conn:
+            districts_df = pd.read_sql_query(
+                """
+                SELECT district_name, agro_ecological_zone, latitude, longitude,
+                       grace_groundwater_pctl, default_irrigation_access
+                FROM districts
+                ORDER BY district_id
+                """,
+                conn,
+            )
+    except Exception as exc:
+        raise RuntimeError(
+            f"Unable to load district metadata from SQLite database '{database_path}'."
+        ) from exc
+
+    if len(districts_df) != len(DISTRICT_METADATA):
+        raise ValueError(
+            f"Expected 64 districts in '{database_path}', found {len(districts_df)}."
+        )
+
+    return [
+        FarmLocation(
+            farm_id=_district_farm_id(str(row.district_name)),
+            latitude=float(row.latitude),
+            longitude=float(row.longitude),
+            district_name=str(row.district_name),
+            aez_zone=str(row.agro_ecological_zone),
+            groundwater_baseline_pctl=float(row.grace_groundwater_pctl),
+            irrigation_access=bool(row.default_irrigation_access),
+        )
+        for row in districts_df.itertuples(index=False)
+    ]
 
 
 # 12 Standardized Daily Features Fed into the Bi-LSTM Temporal Encoder

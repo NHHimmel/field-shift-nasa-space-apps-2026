@@ -35,13 +35,17 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+CACHE_DIR = PROJECT_ROOT / "data" / "cache"
+MODEL_DIR = PROJECT_ROOT / "artifacts" / "models"
+OUTPUT_DIR = PROJECT_ROOT / "outputs"
+
 import numpy as np
 import pandas as pd
 
 from field_shift.nasa_data import (
-    NW_BANGLADESH_DISTRICTS,
     FarmLocation,
     NASAPowerClient,
+    load_bangladesh_districts,
     normalize_daily_sequence,
 )
 from field_shift.rl_pipeline import (
@@ -103,7 +107,7 @@ def build_multi_decade_regional_dataset(
     districts: List[FarmLocation],
     start_year: int = 2005,
     end_year: int = 2024,
-    cache_dir: str = "./nasa_cache",
+    cache_dir: str = str(CACHE_DIR),
 ) -> Tuple[List[Dict], Dict[str, List[Dict]], Dict[str, Dict]]:
     power_client = NASAPowerClient(cache_dir=cache_dir)
     bulk_start = f"{start_year - 1}1101"
@@ -290,12 +294,13 @@ def build_district_decision_payload(
 
 
 def run_nasa_rl_workflow():
-    logger.info("Step 1: Building 20-Year (2005-2024) Multi-District NASA Dataset across 8 NW Bangladesh Districts...")
+    districts = load_bangladesh_districts(PROJECT_ROOT / "field_shift_bangladesh.db")
+    logger.info("Step 1: Building 20-Year (2005-2024) NASA Dataset across %d Bangladesh districts...", len(districts))
     training_bank, district_history_map, latest_district_states = build_multi_decade_regional_dataset(
-        districts=NW_BANGLADESH_DISTRICTS,
+        districts=districts,
         start_year=2005,
         end_year=2024,
-        cache_dir="./nasa_cache",
+        cache_dir=str(CACHE_DIR),
     )
 
     actor_critic_model = None
@@ -346,7 +351,8 @@ def run_nasa_rl_workflow():
                 float(np.mean(rets[-20:])),
             )
 
-        ckpt_path = Path("field_shift_sota_policy.pt")
+        MODEL_DIR.mkdir(parents=True, exist_ok=True)
+        ckpt_path = MODEL_DIR / "field_shift_sota_policy.pt"
         torch.save(actor_critic_model.state_dict(), ckpt_path)
         logger.info("Saved trained SOTA PyTorch policy weights to '%s'.", ckpt_path)
     else:
@@ -382,12 +388,12 @@ def run_nasa_rl_workflow():
     print(tradeoff_table.to_string(index=False))
 
   
-    # STEP 4: REGIONAL MULTI-DISTRICT ADAPTATION MATRIX (ALL 8 DISTRICTS)
+    # STEP 4: REGIONAL MULTI-DISTRICT ADAPTATION MATRIX (ALL 64 DISTRICTS)
 
     district_rows = []
     web_districts_payload: Dict[str, Any] = {}
 
-    for loc_meta in NW_BANGLADESH_DISTRICTS:
+    for loc_meta in districts:
         dist_name = loc_meta.district_name
         state_data = latest_district_states[dist_name]
         history_20yr = district_history_map[dist_name]
@@ -463,7 +469,8 @@ def run_nasa_rl_workflow():
         "districts": web_districts_payload,
     }
 
-    json_path = Path("field_shift_web_payload.json")
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    json_path = OUTPUT_DIR / "field_shift_web_payload.json"
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(full_web_bundle, f, indent=2, ensure_ascii=False)
     logger.info("Exported complete frontend-ready JSON payload to '%s' (%.1f KB).", json_path, json_path.stat().st_size / 1024.0)
