@@ -1,12 +1,14 @@
 """
 Field Shift: Complete 20-Year NASA Dataset, Temporal RL & Web API JSON Exporter
+===============================================================================
 
 Closes 100% of the NASA Space Apps 2026 "Field Shift: Adapting Farms with NASA Data"
 requirements and exports a complete, frontend-ready JSON payload (`field_shift_web_payload.json`)
 alongside the trained PyTorch checkpoint (`field_shift_sota_policy.pt`):
 
-  1. Compares 4 Rotation Strategies (Existing Baseline `Boro Rice -> Fallow -> T. Aman Rice`
-     + 3 AI Pareto Strategies: `Balanced`, `Water Conservation`, `Soil Health`).
+  1. Compares 5 Rotation Strategies (Existing Baseline `Boro Rice -> Fallow -> T. Aman Rice`
+     + 4 AI Pareto Strategies: `Balanced`, `Water Conservation`, `Soil Health`, and
+     `High-Value Vegetable` powered by the 64-district / 50-crop database).
   2. Outputs the 5 Official NASA Rubric Explainability Fields for every strategy:
      - `why_suggested`
      - `supporting_nasa_evidence`
@@ -33,10 +35,6 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-MODEL_DIR = PROJECT_ROOT / "artifacts" / "models"
-OUTPUT_DIR = PROJECT_ROOT / "outputs"
-CACHE_DIR = PROJECT_ROOT / "data" / "cache"
-
 import numpy as np
 import pandas as pd
 
@@ -57,6 +55,7 @@ from field_shift.rl_pipeline import (
     CropRotationMDPEnv,
     FarmProfile,
     PreprocessingPipeline,
+    _get_candidate_pools,
     build_strategy_explainability,
     compute_20yr_historical_uncertainty,
     evaluate_rotation_trajectory,
@@ -104,7 +103,7 @@ def build_multi_decade_regional_dataset(
     districts: List[FarmLocation],
     start_year: int = 2005,
     end_year: int = 2024,
-    cache_dir: str = str(CACHE_DIR),
+    cache_dir: str = "./nasa_cache",
 ) -> Tuple[List[Dict], Dict[str, List[Dict]], Dict[str, Dict]]:
     power_client = NASAPowerClient(cache_dir=cache_dir)
     bulk_start = f"{start_year - 1}1101"
@@ -196,7 +195,8 @@ def build_district_decision_payload(
 ) -> Dict[str, Any]:
     """
     Constructs the complete JSON-serializable decision-support package for a district,
-    including Baseline + 3 AI strategies, 5-point NASA explainability, 20-year uncertainty,
+    including Baseline + 4 AI strategies (Balanced, Water Conservation, Soil Health,
+    High-Value Vegetable), 5-point NASA explainability, 20-year uncertainty,
     12-month crop calendar & bare-field timelines, and What-If scenario slider outputs.
     """
     farm = FarmProfile(
@@ -205,6 +205,7 @@ def build_district_decision_payload(
         baseline_soil_n_kg_ha=75.0,
         soil_organic_matter_pct=1.1,
         priority_mode="balanced",
+        district_name=loc.district_name,
     )
     climates = latest_record["seasonal_vectors"]
     daily_seqs = latest_record["seasonal_daily_seqs"]
@@ -225,24 +226,20 @@ def build_district_decision_payload(
         loc.aez_name if hasattr(loc, "aez_name") else loc.aez_zone,
     )
 
-    # 2. Evaluate the 3 Pareto AI Strategies
-    candidates = [
-        (r, k1, k2)
-        for r in SEASON_ACTION_MAP[0]
-        for k1 in SEASON_ACTION_MAP[1]
-        for k2 in SEASON_ACTION_MAP[2]
-    ]
+    # 2. Evaluate the 4 Specialist Pareto AI Strategies (Core Field + High-Value Vegetable)
+    core_candidates, veg_candidates = _get_candidate_pools()
     modes = [
-        ("Balanced", "balanced"),
-        ("Water Conservation", "water_conservation"),
-        ("Soil Health", "soil_health"),
+        ("Balanced", "balanced", core_candidates),
+        ("Water Conservation", "water_conservation", core_candidates),
+        ("Soil Health", "soil_health", core_candidates),
+        ("High-Value Vegetable", "high_value_vegetable", veg_candidates),
     ]
 
     strategy_cards = [baseline_card]
-    for display_name, mode_key in modes:
+    for display_name, mode_key, pool in modes:
         evals = [
             evaluate_rotation_trajectory(farm, climates, path, mode_key, daily_seqs)
-            for path in candidates
+            for path in pool
         ]
         evals.sort(key=lambda x: x["cumulative_reward"], reverse=True)
         best_eval = evals[0]
@@ -298,14 +295,14 @@ def run_nasa_rl_workflow():
         districts=NW_BANGLADESH_DISTRICTS,
         start_year=2005,
         end_year=2024,
-        cache_dir=str(CACHE_DIR),
+        cache_dir="./nasa_cache",
     )
 
     actor_critic_model = None
     if HAS_TORCH:
         device = resolve_torch_device()
         logger.info(
-            "Step 2: Training SOTA Temporal Attention Bi-GRU + Multi-Head Actor-Critic on '%s' (900 episodes)...",
+            "Step 2: Training SOTA Temporal Attention Bi-GRU + 4-Head Actor-Critic on '%s' (1200 episodes across 50 crops)...",
             device,
         )
         actor_critic_model = CropRotationActorCritic(
@@ -321,6 +318,7 @@ def run_nasa_rl_workflow():
                 baseline_soil_n_kg_ha=float(np.random.uniform(50.0, 100.0)),
                 soil_organic_matter_pct=float(np.random.uniform(0.8, 1.8)),
                 priority_mode=priority_mode,
+                district_name=loc.district_name,
             )
             return CropRotationMDPEnv(
                 profile,
@@ -331,7 +329,7 @@ def run_nasa_rl_workflow():
         mode_history = train_pytorch_actor_critic(
             env_generator=historical_env_generator,
             policy_net=actor_critic_model,
-            num_episodes=900,
+            num_episodes=1200,
             lr=0.003,
             weight_decay=1e-4,
             gamma=0.99,
@@ -342,23 +340,22 @@ def run_nasa_rl_workflow():
 
         for mode_name, rets in mode_history.items():
             logger.info(
-                "  -> Head [%-18s] | Initial 20-ep Return: %+.3f | Final 20-ep Return: %+.3f",
+                "  -> Head [%-20s] | Initial 20-ep Return: %+.3f | Final 20-ep Return: %+.3f",
                 mode_name,
                 float(np.mean(rets[:20])),
                 float(np.mean(rets[-20:])),
             )
 
-        MODEL_DIR.mkdir(parents=True, exist_ok=True)
-        ckpt_path = MODEL_DIR / "field_shift_sota_policy.pt"
+        ckpt_path = Path("field_shift_sota_policy.pt")
         torch.save(actor_critic_model.state_dict(), ckpt_path)
         logger.info("Saved trained SOTA PyTorch policy weights to '%s'.", ckpt_path)
     else:
         logger.info("Step 2: PyTorch not detected in VM environment; proceeding to Pareto evaluation.")
 
     # -------------------------------------------------------------------------
-    # STEP 3: RAJSHAHI COMPARISON (EXISTING BASELINE + 3 AI STRATEGIES)
+    # STEP 3: RAJSHAHI COMPARISON (EXISTING BASELINE + 4 AI STRATEGIES)
     # -------------------------------------------------------------------------
-    logger.info("Step 3: Generating Baseline + 3 Pareto Strategies & Explainability Report...")
+    logger.info("Step 3: Generating Baseline + 4 Specialist Pareto Strategies & Explainability Report...")
     rajshahi_latest = latest_district_states["Rajshahi"]
 
     live_farm = FarmProfile(
@@ -367,6 +364,7 @@ def run_nasa_rl_workflow():
         baseline_soil_n_kg_ha=75.0,
         soil_organic_matter_pct=1.1,
         priority_mode="balanced",
+        district_name="Rajshahi",
     )
 
     tradeoff_table = generate_three_way_tradeoffs(
@@ -375,16 +373,17 @@ def run_nasa_rl_workflow():
         policy_net=actor_critic_model,
         seasonal_daily_sequences=rajshahi_latest["seasonal_daily_seqs"],
         include_existing_baseline=True,
+        include_vegetable_strategy=True,
     )
 
     print("\n" + "=" * 118)
-    print("=== FIELD SHIFT: RAJSHAHI STRATEGY COMPARISON (EXISTING BASELINE vs. 3 AI PARETO OPTIONS) ===")
+    print("=== FIELD SHIFT: RAJSHAHI STRATEGY COMPARISON (EXISTING BASELINE vs. 4 AI PARETO OPTIONS) ===")
     print("=" * 118)
     print(tradeoff_table.to_string(index=False))
 
-    # -------------------------------------------------------------------------
+  
     # STEP 4: REGIONAL MULTI-DISTRICT ADAPTATION MATRIX (ALL 8 DISTRICTS)
-    # -------------------------------------------------------------------------
+
     district_rows = []
     web_districts_payload: Dict[str, Any] = {}
 
@@ -406,32 +405,33 @@ def run_nasa_rl_workflow():
         matched_card = next(
             c for c in dist_payload["strategies_comparison"] if c["strategy_name"] == target_mode
         )
+        veg_card = next(
+            c for c in dist_payload["strategies_comparison"] if c["strategy_name"] == "High-Value Vegetable"
+        )
         m = matched_card["metrics"]
         u = matched_card["uncertainty_20yr_band"]
 
         district_rows.append({
             "District": dist_name,
-            "Agro-Ecological Zone": loc_meta.aez_zone,
             "GRACE GW (%)": int(loc_meta.groundwater_baseline_pctl),
             "Active Policy": target_mode,
-            "Optimal Rotation Sequence": matched_card["recommended_rotation"],
-            "Profit ($/ha)": m["net_profit_usd_ha"],
-            "20Yr Profit CI ($/ha)": f"{u['profit_mean_usd']} ± {u['profit_std_usd']}",
-            "Water (mm)": m["total_water_mm"],
+            "Field Crop Rotation": matched_card["recommended_rotation"],
+            "Field Profit ($/ha)": m["net_profit_usd_ha"],
+            "Vegetable Rotation": veg_card["recommended_rotation"],
+            "Veg Profit ($/ha)": veg_card["metrics"]["net_profit_usd_ha"],
             "Water Saved (mm)": m["water_saved_vs_baseline_mm"],
-            "Bare Days/Yr": m["bare_field_days_yr"],
         })
 
     regional_df = pd.DataFrame(district_rows)
     print("\n" + "=" * 136)
-    print("=== NORTHWEST BANGLADESH REGIONAL ADAPTATION MATRIX (WITH 20-YEAR UNCERTAINTY & WATER SAVINGS vs. BORO BASELINE) ===")
+    print("=== NORTHWEST BANGLADESH REGIONAL ADAPTATION MATRIX (FIELD CROP vs. HIGH-VALUE VEGETABLE ROTATIONS) ===")
     print("=" * 136)
     print(regional_df.to_string(index=False))
 
-    # Print sample 5-point explainability report for Rajshahi Soil Health strategy
+    # Print sample 5-point explainability report for Rajshahi strategies
     raj_cards = web_districts_payload["Rajshahi"]["strategies_comparison"]
     print("\n" + "=" * 118)
-    print("=== SAMPLE 5-POINT NASA EXPLAINABILITY & RISK REPORT (RAJSHAHI - WATER CONSERVATION & SOIL HEALTH) ===")
+    print("=== SAMPLE 5-POINT NASA EXPLAINABILITY & RISK REPORT (RAJSHAHI - ALL 4 AI STRATEGIES) ===")
     print("=" * 118)
     for card in raj_cards[1:]:
         print(f"\n[{card['strategy_name'].upper()}] -> {card['recommended_rotation']}")
@@ -441,12 +441,10 @@ def run_nasa_rl_workflow():
         print(f"  4. Uncertainty & Gaps   : {card['information_gaps_and_uncertainty'][0]}")
         print(f"  5. Local Expert Review  : {card['risks_requiring_local_expert_review'][0]}")
 
-    # -------------------------------------------------------------------------
     # STEP 5: EXPORT COMPLETE JSON BUNDLE FOR WEB APPLICATION FRONTEND
-    # -------------------------------------------------------------------------
     full_web_bundle = {
         "project_title": "Field Shift: Adapting Farms with NASA Data (2026 NASA Space Apps Challenge)",
-        "target_region": "Northwest Bangladesh (8 Districts, 20-Year Daily NASA Dataset 2005-2024)",
+        "target_region": "Bangladesh (64-District / 50-Crop Rotational Catalog + 20-Year Daily NASA Dataset 2005-2024)",
         "farmer_centered_advisory_notice": (
             "IMPORTANT ADVISORY: Field Shift is a decision-support tool designed to help farmers and "
             "agricultural extension officers explore climate-resilient crop rotation possibilities using "
@@ -465,8 +463,7 @@ def run_nasa_rl_workflow():
         "districts": web_districts_payload,
     }
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    json_path = OUTPUT_DIR / "field_shift_web_payload.json"
+    json_path = Path("field_shift_web_payload.json")
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(full_web_bundle, f, indent=2, ensure_ascii=False)
     logger.info("Exported complete frontend-ready JSON payload to '%s' (%.1f KB).", json_path, json_path.stat().st_size / 1024.0)

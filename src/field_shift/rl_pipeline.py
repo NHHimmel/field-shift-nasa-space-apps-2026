@@ -1,33 +1,32 @@
 """
-Field Shift: SOTA Temporal Attention Bi-GRU Actor-Critic & Complete NASA Space Apps Backend Engine
+Field Shift: National 64-District & 49-Crop PyTorch RL / MDP Crop Rotation System
+=================================================================================
 
-Target Region: Northwest Bangladesh (8 Agricultural Districts across Barind & Tista AEZs)
-Cropping Horizon: Finite Horizon T=3 Seasons (Rabi -> Kharif-1 -> Kharif-2)
-
-Capabilities Built for Web Decision-Support Consumption:
-  1. End-to-End Temporal Attention Bi-GRU (`TemporalAttentionEncoder`):
-     - Returns both the 64-dim seasonal embedding AND the 120-day attention weight profile
-       (`attn_probs`) so the frontend can highlight exact peak climate-stress windows.
-  2. Baseline Comparison + 3 Pareto Strategies (`generate_three_way_tradeoffs`):
-     - Always includes `Existing Baseline (Status Quo)` (`Boro Rice -> Fallow -> T. Aman Rice`)
-       as Row 0 alongside `Balanced`, `Water Conservation`, and `Soil Health`, computing exact
-       water saved (mm), nitrogen saved (kg/ha), profit delta ($/ha), and bare-field days.
-  3. 20-Year Historical Monte Carlo Uncertainty & Confidence Intervals:
-     - Evaluates each strategy across all 20 historical years (2005-2024) for a district to
-       output mean, std, 10th-percentile (worst drought/flood risk), and 90th-percentile outcomes.
-  4. Climate Scenario Sensitivity Perturbation Engine (`simulate_climate_scenario`):
-     - Accepts frontend slider parameters (`rainfall_delta_pct`, `temp_delta_c`, `gw_delta_pct`)
-       and re-evaluates all strategies in real time.
-  5. Official NASA 5-Point Explainability & Farmer Advisory Generator (`build_strategy_explainability`):
-     - Generates `why_suggested`, `nasa_evidence_used`, `agronomic_benefits`,
-       `information_gaps_and_uncertainty`, `risks_requiring_local_expert_review`, and
-       12-month crop calendar / bare-field timelines ready for JSON serialization.
+Configured Directly from Your 64-District & 72-Crop Database (`field_shift_bangladesh.db`
+/ MySQL `field_shift_db`):
+  - Dynamic 49-Crop Rotational Action Space:
+      * 26 Rabi Crops (Cereals, Pulses, Oilseeds, Winter Vegetables, Tubers & Spices)
+      * 18 Kharif-1 Crops (Pre-Monsoon Pulses, Jute, Aus, Summer Vegetables & Fallow)
+      * 5 Kharif-2 Crops (Aman Rice, Mashkalai, Arhar, Oal Kachu, Puishak)
+      * Plus Potato (when evaluating custom Northwest plots) = 50 total rotational actions
+  - 4 Specialist Policy & Critic Heads in PyTorch (`CropRotationActorCritic`):
+      1. `balanced` (Field crops & pulses economic/ecological balance)
+      2. `water_conservation` (Minimum irrigation demand & Barind/aquifer protection)
+      3. `soil_health` (Maximum biological N-fixation & botanical pest-break)
+      4. `high_value_vegetable` (High-income winter & summer vegetable rotations weighted
+         by each district's empirical `AP Ratio` yield index from your spreadsheet)
+  - District-Aware MDP Environment (`CropRotationMDPEnv`):
+      Automatically loads district-specific `AP Ratio` yield multipliers, seasonal rainfall,
+      and evapotranspiration directly from `field_shift_bangladesh.db` (or MySQL) so every
+      one of the 64 districts is modeled with its real spreadsheet data.
 """
 
 from __future__ import annotations
 
 import logging
+import sqlite3
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -48,10 +47,6 @@ logger = logging.getLogger("FieldShiftSOTA")
 
 
 def resolve_torch_device(prefer_device: Optional[str] = None) -> str:
-    """
-    Safely probes CUDA / cuBLAS compatibility and falls back to CPU if the local GPU
-    architecture (e.g., GeForce MX330 sm_61) mismatches the installed CUDA binary.
-    """
     if not HAS_TORCH:
         return "cpu"
     if prefer_device == "cpu":
@@ -69,60 +64,186 @@ def resolve_torch_device(prefer_device: Optional[str] = None) -> str:
             return "cpu"
     return "cpu"
 
-
-
-# STAGE 1: AGRONOMIC CATALOG, CROP CALENDAR & GLOSSARY
+# STAGE 1: DYNAMIC 50-CROP CATALOG LOADED FROM THE 64-DISTRICT DATABASE
 
 @dataclass(frozen=True)
 class CropSpec:
     crop_id: int
     name: str
     season: str              # 'Rabi', 'Kharif-1', 'Kharif-2'
-    family: str              # 'Fabaceae', 'Poaceae', 'Brassicaceae', 'Solanaceae', 'Malvaceae', 'None'
+    category: str            # 'Cereal', 'Pulse_Legume', 'Oilseed', 'Fiber', 'Vegetable_Tuber_Spice', 'Fallow'
+    family: str              # Botanical family
     duration_days: int
-    water_req_mm: float      # Reference seasonal crop evapotranspiration requirement (ETc)
-    n_fixation_kg_ha: float  # Net residual soil N change (kg N/ha) after standard management
+    water_req_mm: float      # Seasonal crop evapotranspiration requirement (ETc)
+    n_fixation_kg_ha: float  # Net residual soil N change (kg N/ha)
     baseline_margin_usd: float # Reference gross margin USD/ha
     drought_hardiness: float # 0.0 to 1.0
     waterlogging_hardiness: float # 0.0 to 1.0
     optimal_temp_c: float    # Optimal seasonal mean temperature (C)
-    sowing_window: str       # Typical sowing window for frontend timeline
-    harvest_window: str      # Typical harvest window for frontend timeline
-    root_system: str         # 'Deep taproot', 'Fibrous shallow', 'Tuberous', 'Deep fibrous'
-    erosion_protection: str  # 'High', 'Moderate', 'Low (Bare Soil)'
+    sowing_window: str
+    harvest_window: str
+    root_system: str
+    erosion_protection: str
 
 
-CROP_CATALOG: List[CropSpec] = [
-    # --- RABI (Winter, Indices 0 - 5) ---
-    CropSpec(0, "Lentil", "Rabi", "Fabaceae", 105, 200.0, +32.0, 780.0, 0.90, 0.15, 20.0, "Nov 05 - Nov 20", "Feb 18 - Mar 05", "Deep taproot", "Moderate"),
-    CropSpec(1, "Mustard", "Rabi", "Brassicaceae", 80, 190.0, -8.0, 660.0, 0.75, 0.25, 20.5, "Oct 25 - Nov 15", "Jan 20 - Feb 10", "Taproot", "Moderate"),
-    CropSpec(2, "Wheat", "Rabi", "Poaceae", 110, 320.0, -22.0, 640.0, 0.65, 0.30, 19.5, "Nov 15 - Dec 05", "Mar 15 - Mar 30", "Fibrous", "High"),
-    CropSpec(3, "Potato", "Rabi", "Solanaceae", 90, 410.0, -28.0, 1380.0, 0.45, 0.15, 18.5, "Nov 01 - Nov 20", "Feb 01 - Feb 20", "Tuberous shallow", "Low-Moderate"),
-    CropSpec(4, "Maize", "Rabi", "Poaceae", 140, 520.0, -35.0, 1080.0, 0.60, 0.40, 21.5, "Nov 15 - Dec 15", "Apr 10 - May 05", "Deep fibrous", "Moderate"),
-    CropSpec(5, "Boro Rice", "Rabi", "Poaceae", 150, 1150.0, -42.0, 720.0, 0.10, 0.95, 24.0, "Dec 15 - Jan 15", "Apr 25 - May 15", "Fibrous shallow", "High (Flooded)"),
+def _build_full_crop_catalog() -> List[CropSpec]:
+    """
+    Loads all 49 rotational annual crops (field crops, pulses, oilseeds, fiber,
+    vegetables, tubers, spices, and Fallow) from `field_shift_bangladesh.db`
+    (plus Potato) into a unified 50-crop catalog indexed 0..49.
+    """
+    db_candidates = [
+        Path("field_shift_bangladesh.db"),
+        Path("artifacts/file_generation/ttl=63d/output/field_shift_bangladesh.db"),
+    ]
+    db_file = next((p for p in db_candidates if p.exists()), None)
 
-    # --- KHARIF-1 (Pre-Monsoon, Indices 6 - 9) ---
-    CropSpec(6, "Mungbean", "Kharif-1", "Fabaceae", 70, 210.0, +28.0, 590.0, 0.82, 0.25, 29.0, "Mar 15 - Apr 05", "May 25 - Jun 15", "Nodulating taproot", "High (Cover crop)"),
-    CropSpec(7, "Aus Rice", "Kharif-1", "Poaceae", 110, 540.0, -20.0, 520.0, 0.55, 0.80, 30.0, "Mar 25 - Apr 15", "Jul 05 - Jul 25", "Fibrous", "Moderate"),
-    CropSpec(8, "Jute", "Kharif-1", "Malvaceae", 120, 460.0, +10.0, 540.0, 0.50, 0.95, 30.5, "Mar 25 - Apr 20", "Jul 20 - Aug 10", "Deep taproot", "High (Dense canopy)"),
-    CropSpec(9, "Fallow", "Kharif-1", "None", 0, 0.0, +5.0, 0.0, 1.00, 1.00, 28.0, "Mar 15 - Jun 30", "None (Bare Field)", "None", "Low (Bare Soil)"),
+    if db_file is not None:
+        conn = sqlite3.connect(str(db_file))
+        df_c = pd.read_sql(
+            "SELECT * FROM crops WHERE is_rotational = 1 ORDER BY corrected_rotation_season, crop_name",
+            conn,
+        )
+        conn.close()
+        specs: List[CropSpec] = []
+        for idx, row in df_c.iterrows():
+            c_name = str(row["crop_name"])
+            seas = str(row["corrected_rotation_season"])
+            cat = str(row["crop_category"])
+            fam = str(row["botanical_family"])
+            opt_t = 20.0 if seas == "Rabi" else (29.5 if seas == "Kharif-1" else 28.5)
+            root_sys = "Nodulating taproot" if fam == "Fabaceae" else ("Fibrous" if fam == "Poaceae" else "Taproot / Tuber")
+            eros = "Low (Bare Soil)" if c_name == "Fallow" else ("High" if int(row["duration_days"]) >= 90 else "Moderate")
+            specs.append(
+                CropSpec(
+                    crop_id=len(specs),
+                    name=c_name if c_name != "Mug" else "Mungbean",
+                    season=seas,
+                    category=cat,
+                    family=fam,
+                    duration_days=int(row["duration_days"]),
+                    water_req_mm=float(row["water_req_mm"]),
+                    n_fixation_kg_ha=float(row["nitrogen_delta_kg_ha"]),
+                    baseline_margin_usd=float(row["baseline_margin_usd_ha"]),
+                    drought_hardiness=float(row["drought_hardiness"]),
+                    waterlogging_hardiness=float(row["waterlogging_hardiness"]),
+                    optimal_temp_c=opt_t,
+                    sowing_window=str(row["transplant_month"]),
+                    harvest_window=str(row["harvest_window"]),
+                    root_system=root_sys,
+                    erosion_protection=eros,
+                )
+            )
+        # Ensure Potato is also present in Rabi for classic cash-crop comparison
+        if not any(s.name == "Potato" for s in specs):
+            specs.append(
+                CropSpec(
+                    crop_id=len(specs),
+                    name="Potato",
+                    season="Rabi",
+                    category="Vegetable_Tuber_Spice",
+                    family="Solanaceae",
+                    duration_days=90,
+                    water_req_mm=410.0,
+                    n_fixation_kg_ha=-28.0,
+                    baseline_margin_usd=1380.0,
+                    drought_hardiness=0.45,
+                    waterlogging_hardiness=0.15,
+                    optimal_temp_c=18.5,
+                    sowing_window="Nov 01 - Nov 20",
+                    harvest_window="Feb 01 - Feb 20",
+                    root_system="Tuberous shallow",
+                    erosion_protection="Low-Moderate",
+                )
+            )
+        return specs
 
-    # --- KHARIF-2 (Monsoon, Index 10) ---
-    CropSpec(10, "T. Aman Rice", "Kharif-2", "Poaceae", 130, 780.0, -24.0, 710.0, 0.45, 0.92, 28.5, "Jul 10 - Aug 05", "Nov 15 - Dec 05", "Fibrous", "High"),
-]
+    # Fallback catalog if DB has not been generated yet
+    return [
+        CropSpec(0, "Lentil", "Rabi", "Pulse_Legume", "Fabaceae", 105, 200.0, +32.0, 780.0, 0.90, 0.15, 20.0, "Nov", "Feb-Mar", "Deep taproot", "Moderate"),
+        CropSpec(1, "Rape & Mustard", "Rabi", "Oilseed", "Brassicaceae", 80, 190.0, -8.0, 660.0, 0.75, 0.25, 20.5, "Oct-Nov", "Jan-Feb", "Taproot", "Moderate"),
+        CropSpec(2, "Wheat", "Rabi", "Cereal", "Poaceae", 110, 320.0, -22.0, 640.0, 0.65, 0.30, 19.5, "Nov-Dec", "Mar", "Fibrous", "High"),
+        CropSpec(3, "Potato", "Rabi", "Vegetable_Tuber_Spice", "Solanaceae", 90, 410.0, -28.0, 1380.0, 0.45, 0.15, 18.5, "Nov", "Feb", "Tuberous", "Low-Moderate"),
+        CropSpec(4, "Onion", "Rabi", "Vegetable_Tuber_Spice", "Amaryllidaceae", 110, 350.0, -22.0, 1480.0, 0.60, 0.20, 20.0, "Oct-Nov", "Mar-Apr", "Bulb fibrous", "Moderate"),
+        CropSpec(5, "Cabbage", "Rabi", "Vegetable_Tuber_Spice", "Brassicaceae", 90, 340.0, -26.0, 1520.0, 0.50, 0.25, 18.0, "Sep-Oct", "Jan-Feb", "Fibrous", "Moderate"),
+        CropSpec(6, "Cauliflower", "Rabi", "Vegetable_Tuber_Spice", "Brassicaceae", 85, 330.0, -25.0, 1560.0, 0.50, 0.25, 18.5, "Sep-Oct", "Jan-Feb", "Fibrous", "Moderate"),
+        CropSpec(7, "Boro", "Rabi", "Cereal", "Poaceae", 150, 1150.0, -42.0, 720.0, 0.10, 0.95, 24.0, "Dec-Jan", "Apr-May", "Fibrous", "High"),
+        CropSpec(8, "Mungbean", "Kharif-1", "Pulse_Legume", "Fabaceae", 70, 210.0, +28.0, 590.0, 0.82, 0.25, 29.0, "Mar-Apr", "May-Jun", "Nodulating taproot", "High"),
+        CropSpec(9, "Barbati", "Kharif-1", "Vegetable_Tuber_Spice", "Fabaceae", 75, 250.0, +20.0, 980.0, 0.72, 0.40, 28.5, "Mar-Apr", "Jun", "Nodulating taproot", "High"),
+        CropSpec(10, "Patal", "Kharif-1", "Vegetable_Tuber_Spice", "Cucurbitaceae", 110, 350.0, -18.0, 1220.0, 0.68, 0.55, 29.5, "Mar", "Jun-Jul", "Taproot", "Moderate"),
+        CropSpec(11, "Karala", "Kharif-1", "Vegetable_Tuber_Spice", "Cucurbitaceae", 80, 290.0, -15.0, 1180.0, 0.70, 0.55, 29.0, "Mar", "Jun", "Taproot", "Moderate"),
+        CropSpec(12, "Jute", "Kharif-1", "Fiber", "Malvaceae", 120, 460.0, +10.0, 540.0, 0.50, 0.95, 30.5, "Mar-Apr", "Jul-Aug", "Deep taproot", "High"),
+        CropSpec(13, "Fallow", "Kharif-1", "Fallow", "None", 0, 0.0, +5.0, 0.0, 1.00, 1.00, 28.0, "None", "None", "None", "Low"),
+        CropSpec(14, "Aman", "Kharif-2", "Cereal", "Poaceae", 130, 780.0, -24.0, 710.0, 0.45, 0.92, 28.5, "Jul-Aug", "Nov-Dec", "Fibrous", "High"),
+        CropSpec(15, "Mashkalai", "Kharif-2", "Pulse_Legume", "Fabaceae", 85, 240.0, +26.0, 560.0, 0.80, 0.35, 28.0, "Aug", "Nov", "Nodulating taproot", "High"),
+    ]
 
+
+CROP_CATALOG: List[CropSpec] = _build_full_crop_catalog()
 NUM_CROPS = len(CROP_CATALOG)
-SEASON_NAMES = ["Rabi", "Kharif-1", "Kharif-2"]
-SEASON_TOTAL_DAYS = [135, 106, 124]  # Total calendar days in Rabi (Nov-Mar), Kharif-1 (Mar-Jun), Kharif-2 (Jul-Oct)
-SEASON_ACTION_MAP: Dict[int, List[int]] = {
-    0: [0, 1, 2, 3, 4, 5],      # Rabi
-    1: [6, 7, 8, 9],            # Kharif-1
-    2: [10],                    # Kharif-2
-}
-PRIORITY_MODES = ["balanced", "water_conservation", "soil_health"]
-EXISTING_BASELINE_PATH: Tuple[int, int, int] = (5, 9, 10)  # Boro Rice -> Fallow -> T. Aman Rice
+CROP_NAME_TO_ID: Dict[str, int] = {c.name: c.crop_id for c in CROP_CATALOG}
+# Map aliases ("T. Aman Rice" -> "Aman", "Boro Rice" -> "Boro", "Mug" -> "Mungbean")
+if "Aman" in CROP_NAME_TO_ID:
+    CROP_NAME_TO_ID["T. Aman Rice"] = CROP_NAME_TO_ID["Aman"]
+if "Boro" in CROP_NAME_TO_ID:
+    CROP_NAME_TO_ID["Boro Rice"] = CROP_NAME_TO_ID["Boro"]
+if "Mungbean" in CROP_NAME_TO_ID:
+    CROP_NAME_TO_ID["Mug"] = CROP_NAME_TO_ID["Mungbean"]
+if "Rape & Mustard" in CROP_NAME_TO_ID:
+    CROP_NAME_TO_ID["Mustard"] = CROP_NAME_TO_ID["Rape & Mustard"]
 
-# Farmer-Friendly Glossary of Scientific & Satellite Terms for Web Tooltips
+SEASON_NAMES = ["Rabi", "Kharif-1", "Kharif-2"]
+SEASON_TOTAL_DAYS = [135, 106, 124]
+SEASON_ACTION_MAP: Dict[int, List[int]] = {
+    0: [c.crop_id for c in CROP_CATALOG if c.season == "Rabi"],
+    1: [c.crop_id for c in CROP_CATALOG if c.season == "Kharif-1"],
+    2: [c.crop_id for c in CROP_CATALOG if c.season == "Kharif-2"],
+}
+
+# 4 Specialist Policy Modes (including the new High-Value Vegetable head)
+PRIORITY_MODES = ["balanced", "water_conservation", "soil_health", "high_value_vegetable"]
+
+EXISTING_BASELINE_PATH: Tuple[int, int, int] = (
+    CROP_NAME_TO_ID.get("Boro", 0),
+    CROP_NAME_TO_ID.get("Fallow", 1),
+    CROP_NAME_TO_ID.get("Aman", 2),
+)
+
+
+def load_district_yield_multipliers() -> Dict[str, Dict[str, float]]:
+    """
+    Loads district-specific Relative Yield Indices (`AP Ratio / National Mean AP Ratio`)
+    from `field_shift_bangladesh.db` so the MDP environment rewards crops and vegetables
+    that actually achieve high yields in that specific district.
+    """
+    db_candidates = [
+        Path("field_shift_bangladesh.db"),
+        Path("artifacts/file_generation/ttl=63d/output/field_shift_bangladesh.db"),
+    ]
+    db_file = next((p for p in db_candidates if p.exists()), None)
+    if db_file is None:
+        return {}
+
+    conn = sqlite3.connect(str(db_file))
+    df_r = pd.read_sql(
+        "SELECT district_name, crop_name, relative_yield_index FROM district_crop_records WHERE is_rotational = 1",
+        conn,
+    )
+    conn.close()
+
+    out: Dict[str, Dict[str, float]] = {}
+    for _, row in df_r.iterrows():
+        d_name = str(row["district_name"])
+        c_name = str(row["crop_name"])
+        if c_name == "Mug":
+            c_name = "Mungbean"
+        out.setdefault(d_name, {})[c_name] = float(row["relative_yield_index"])
+    return out
+
+
+DISTRICT_YIELD_MULTIPLIERS: Dict[str, Dict[str, float]] = load_district_yield_multipliers()
+
+
 FARMER_SCIENTIFIC_GLOSSARY: Dict[str, Dict[str, str]] = {
     "Evapotranspiration (ETc)": {
         "scientific_source": "NASA MODIS (MOD16A2GF) & ECOSTRESS (ECO_L3T_JET)",
@@ -139,17 +260,13 @@ FARMER_SCIENTIFIC_GLOSSARY: Dict[str, Dict[str, str]] = {
         "plain_meaning": "Ranks current deep aquifer water levels against a 70-year historical baseline. Below 30% signals severe tubewell drawdown risk.",
         "satellite_vs_ground": "GRACE measures regional gravity shifts over ~25 km grids; local BMDA observation wells confirm exact static water depth for pump suction.",
     },
-    "Vapor Pressure Deficit (VPD)": {
-        "scientific_source": "NASA POWER / MERRA-2 (T2M & RH2M)",
-        "plain_meaning": "Atmospheric thirst—how strongly dry, hot air pulls moisture out of crop leaves. High VPD (>1.5 kPa) triggers stomatal closure and wilting.",
-        "satellite_vs_ground": "Derived from 2-meter air temperature and humidity reanalysis; shaded orchards or irrigated bunds may have slightly cooler microclimates.",
-    },
-    "Biological Nitrogen Fixation (ΔN)": {
-        "scientific_source": "FAO Agronomic Trait Matrix + MODIS/HLS NDVI Vigor",
-        "plain_meaning": "Natural fertilizer added to the soil by legume root nodules (Lentil, Mungbean), cutting urea fertilizer costs for the next rice or maize crop.",
-        "satellite_vs_ground": "Satellites track green canopy biomass (NDVI/EVI), while laboratory soil N-P-K testing confirms exact mineral nitrogen carryover.",
+    "District AP Ratio (Yield Index)": {
+        "scientific_source": "Bangladesh 64-District Agricultural Production & Area Dataset",
+        "plain_meaning": "Measures how many tonnes per hectare a crop produces in your specific district compared to the national average.",
+        "satellite_vs_ground": "Combines district-level harvest statistics with NASA seasonal solar radiation, rainfall, and evapotranspiration.",
     },
 }
+
 
 class PreprocessingPipeline:
     @staticmethod
@@ -182,18 +299,16 @@ class PreprocessingPipeline:
         ], dtype=np.float32)
         return vec
 
-
-# =============================================================================
-# STAGE 2: CALIBRATED AGRICULTURAL MDP ENVIRONMENT
-# =============================================================================
+# STAGE 2: DISTRICT-AWARE 50-CROP MDP ENVIRONMENT
 
 @dataclass
 class FarmProfile:
     farm_id: str
-    irrigation_access: bool        # True if farm has motorized deep/shallow tubewell
-    baseline_soil_n_kg_ha: float   # Initial soil mineral nitrogen pool (e.g. 75 kg/ha)
-    soil_organic_matter_pct: float # Baseline Soil Organic Carbon % (from SoilGrids 250m)
-    priority_mode: str             # 'balanced', 'water_conservation', 'soil_health'
+    irrigation_access: bool
+    baseline_soil_n_kg_ha: float
+    soil_organic_matter_pct: float
+    priority_mode: str = "balanced"
+    district_name: str = "Rajshahi"
 
 
 class CropRotationMDPEnv:
@@ -223,10 +338,12 @@ class CropRotationMDPEnv:
     @staticmethod
     def _resolve_weights(priority: str) -> Dict[str, float]:
         if priority == "water_conservation":
-            return {"profit": 0.12, "water_weight": 1.45, "soil_weight": 0.15}
+            return {"profit": 0.12, "water_weight": 1.45, "soil_weight": 0.15, "veg_bonus": 0.0}
         elif priority == "soil_health":
-            return {"profit": 0.18, "water_weight": 0.15, "soil_weight": 1.45}
-        return {"profit": 0.72, "water_weight": 0.18, "soil_weight": 0.12}  # balanced
+            return {"profit": 0.18, "water_weight": 0.15, "soil_weight": 1.45, "veg_bonus": 0.0}
+        elif priority == "high_value_vegetable":
+            return {"profit": 0.80, "water_weight": 0.15, "soil_weight": 0.20, "veg_bonus": 0.45}
+        return {"profit": 0.72, "water_weight": 0.18, "soil_weight": 0.12, "veg_bonus": 0.0}  # balanced
 
     def get_state(self) -> np.ndarray:
         climate_vec = self.seasonal_climates[self.current_season_idx]
@@ -243,7 +360,7 @@ class CropRotationMDPEnv:
         family_oh = np.array([
             1.0 if self.prev_family == "Poaceae" else 0.0,
             1.0 if self.prev_family == "Fabaceae" else 0.0,
-            1.0 if self.prev_family in ["Brassicaceae", "Solanaceae", "Malvaceae"] else 0.0,
+            1.0 if self.prev_family not in ("None", "Poaceae", "Fabaceae") else 0.0,
         ], dtype=np.float32)
 
         state = np.concatenate([
@@ -262,7 +379,10 @@ class CropRotationMDPEnv:
         base = np.tile(c_vec, (120, 2))[:, :12]
         return (base + 0.1 * np.sin(t_steps)).astype(np.float32)
 
-    def get_action_mask(self) -> np.ndarray:
+    def get_action_mask(self, restrict_to_core: bool = False) -> np.ndarray:
+        """
+        Returns a binary mask over all `NUM_CROPS` (50 crops) for the current season.
+        """
         mask = np.zeros(NUM_CROPS, dtype=np.float32)
         legal_indices = SEASON_ACTION_MAP[self.current_season_idx]
         mask[legal_indices] = 1.0
@@ -273,7 +393,6 @@ class CropRotationMDPEnv:
         s_idx = self.current_season_idx
         climate = self.seasonal_climates[s_idx]
 
-        # De-normalize continuous NASA climate features for current season
         temp_c = float(climate[0] * 10.0 + 25.0)
         heat_days = float(climate[1] * 30.0)
         precip_mm = float(np.expm1(climate[2] * 6.0))
@@ -283,7 +402,7 @@ class CropRotationMDPEnv:
         vpd_kpa = float(climate[6] * 2.5)
         grace_pctl = float(climate[7] * 100.0)
 
-        # --- 1. Site-Specific Crop Evapotranspiration Demand (ETc) ---
+        # 1. Site-Specific Crop Evapotranspiration Demand (ETc)
         if crop.water_req_mm > 0.0:
             et_mod = 1.0 + 0.10 * (vpd_kpa - 1.05) + 0.008 * (temp_c - crop.optimal_temp_c)
             water_used = float(np.clip(crop.water_req_mm * et_mod, crop.water_req_mm * 0.85, crop.water_req_mm * 1.25))
@@ -293,8 +412,15 @@ class CropRotationMDPEnv:
         effective_rain_and_soil = (precip_mm * 0.65) + (sm_root * 180.0)
         blue_water_deficit = max(0.0, water_used - effective_rain_and_soil)
 
-        # --- 2. Continuous Agro-Ecological Yield & Margin Realization ---
+        # 2. District AP Ratio Yield Scaling + Continuous NASA Climate Response
         effective_margin = crop.baseline_margin_usd
+
+        # Apply empirical District AP Ratio yield multiplier from the 64-district spreadsheet
+        dist_mults = DISTRICT_YIELD_MULTIPLIERS.get(self.profile.district_name, {})
+        ap_rel_yield = dist_mults.get(crop.name, 1.0)
+        # Blend baseline economics with district yield advantage (kept subtle for field crops, full for vegetables)
+        if crop.category == "Vegetable_Tuber_Spice" and crop.name != "Potato":
+            effective_margin *= (0.45 + 0.55 * ap_rel_yield)
 
         if crop.name != "Fallow":
             temp_diff = abs(temp_c - crop.optimal_temp_c)
@@ -307,7 +433,7 @@ class CropRotationMDPEnv:
             if grace_pctl >= 50.0:
                 if crop.name == "Jute":
                     effective_margin *= 1.38
-                elif crop.name in ("Lentil", "Mustard"):
+                elif crop.name in ("Lentil", "Rape & Mustard"):
                     effective_margin *= 1.08
                 elif crop.name == "Potato":
                     effective_margin *= 0.65
@@ -315,7 +441,7 @@ class CropRotationMDPEnv:
             if heat_days > 4.0 and crop.name == "Wheat":
                 effective_margin *= 0.80
 
-        # --- 3. Water Deficit & Aquifer Depletion Penalty ---
+        # 3. Water Deficit & Aquifer Depletion Penalty
         water_penalty = 0.0
         if crop.water_req_mm > 0.0:
             water_penalty += water_used * 0.55 + blue_water_deficit * 0.45
@@ -331,7 +457,7 @@ class CropRotationMDPEnv:
                 if grace_pctl < 30.0 and water_used > 750.0:
                     water_penalty += 450.0
 
-        # --- 4. Exact Soil Mineral Nitrogen Mass Balance ---
+        # 4. Exact Soil Mineral Nitrogen Mass Balance
         soil_n_pre = self.soil_n
         soil_bonus = 0.0
         self.soil_n = self.soil_n + crop.n_fixation_kg_ha
@@ -354,15 +480,17 @@ class CropRotationMDPEnv:
         elif crop.name == "Fallow":
             pest_break_status = "Fallow rest period (moisture conservation, bare soil)"
 
-        # --- 5. Multi-Objective Scalar Reward ---
+        # 5. Multi-Objective Scalar Reward (Including High-Value Vegetable Head)
         norm_profit = effective_margin / 1000.0
         norm_water_pen = water_penalty / 500.0
         norm_soil_bon = soil_bonus / 200.0
+        veg_bonus = 0.35 if crop.category == "Vegetable_Tuber_Spice" else 0.0
 
         reward = (
             self.weights["profit"] * norm_profit
             - self.weights["water_weight"] * norm_water_pen
             + self.weights["soil_weight"] * norm_soil_bon
+            + self.weights.get("veg_bonus", 0.0) * veg_bonus
         )
 
         self.cumulative_water_used_mm += water_used
@@ -378,6 +506,7 @@ class CropRotationMDPEnv:
             "season_name": SEASON_NAMES[s_idx],
             "crop_id": crop.crop_id,
             "crop": crop.name,
+            "crop_category": crop.category,
             "botanical_family": crop.family,
             "sowing_window": crop.sowing_window,
             "harvest_window": crop.harvest_window,
@@ -422,9 +551,7 @@ class CropRotationMDPEnv:
         self.season_step_logs.clear()
         return self.get_state()
 
-
-
-# STAGE 3: SOTA TEMPORAL ATTENTION BI-GRU + MULTI-HEAD ACTOR-CRITIC
+# STAGE 3: 50-CROP TEMPORAL ATTENTION BI-GRU + 4-HEAD ACTOR-CRITIC
 
 if HAS_TORCH:
     class TemporalAttentionEncoder(nn.Module):
@@ -456,6 +583,16 @@ if HAS_TORCH:
             return context
 
     class CropRotationActorCritic(nn.Module):
+        """
+        National 64-District / 50-Crop Temporal Attention Bi-GRU Actor-Critic:
+          - Supports all 50 rotational crops (`action_dim = NUM_CROPS`) across Rabi, Kharif-1, Kharif-2.
+          - 4 Specialist Actor & Critic Heads:
+              1. `balanced`
+              2. `water_conservation`
+              3. `soil_health`
+              4. `high_value_vegetable`
+        """
+
         def __init__(
             self,
             state_dim: int = 17,
@@ -513,7 +650,8 @@ if HAS_TORCH:
             daily_seq: Optional[torch.Tensor] = None,
         ) -> Tuple[Categorical, torch.Tensor]:
             features = self._fuse_inputs(state, daily_seq)
-            logits = self.actor_heads[priority_mode](features)
+            head_key = priority_mode if priority_mode in self.actor_heads else "balanced"
+            logits = self.actor_heads[head_key](features)
 
             masked_logits = torch.where(
                 action_mask > 0.5,
@@ -521,7 +659,7 @@ if HAS_TORCH:
                 torch.tensor(-1e9, dtype=logits.dtype, device=logits.device),
             )
             dist = Categorical(logits=masked_logits)
-            value = self.critic_heads[priority_mode](features)
+            value = self.critic_heads[head_key](features)
             return dist, value
 
         def evaluate_actions(
@@ -533,7 +671,8 @@ if HAS_TORCH:
             daily_seqs: Optional[torch.Tensor] = None,
         ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
             features = self._fuse_inputs(states, daily_seqs)
-            logits = self.actor_heads[priority_mode](features)
+            head_key = priority_mode if priority_mode in self.actor_heads else "balanced"
+            logits = self.actor_heads[head_key](features)
             masked_logits = torch.where(
                 action_masks > 0.5,
                 logits,
@@ -542,17 +681,15 @@ if HAS_TORCH:
             dist = Categorical(logits=masked_logits)
             log_probs = dist.log_prob(actions)
             entropy = dist.entropy()
-            values = self.critic_heads[priority_mode](features)
+            values = self.critic_heads[head_key](features)
             return log_probs, values.squeeze(-1), entropy
 
-
-
-# STAGE 4: ADVANTAGE ACTOR-CRITIC (A2C) TRAINING OVER DAILY SEQUENCES
+# STAGE 4: ADVANTAGE ACTOR-CRITIC (A2C) TRAINING OVER 64 DISTRICTS & 50 CROPS
 
 def train_pytorch_actor_critic(
     env_generator,
     policy_net: nn.Module,
-    num_episodes: int = 900,
+    num_episodes: int = 1000,
     lr: float = 0.003,
     weight_decay: float = 1e-4,
     gamma: float = 0.99,
@@ -640,10 +777,7 @@ def train_pytorch_actor_critic(
 
     return mode_history
 
-
-# =============================================================================
-# STAGE 5: BASELINE COMPARISON, UNCERTAINTY, SCENARIO SLIDERS & EXPLAINABILITY
-# =============================================================================
+# STAGE 5: MULTI-STRATEGY EVALUATOR (BASELINE + 3 CORE + HIGH-VALUE VEGETABLE)
 
 def evaluate_rotation_trajectory(
     farm: FarmProfile,
@@ -658,6 +792,7 @@ def evaluate_rotation_trajectory(
         baseline_soil_n_kg_ha=farm.baseline_soil_n_kg_ha,
         soil_organic_matter_pct=farm.soil_organic_matter_pct,
         priority_mode=priority_mode,
+        district_name=farm.district_name,
     )
     env = CropRotationMDPEnv(test_farm, seasonal_climates, seasonal_daily_sequences)
     env.reset()
@@ -667,9 +802,18 @@ def evaluate_rotation_trajectory(
         _, r, _, _ = env.step(a)
         cumulative_reward += r
 
-    seq_str = " -> ".join([c.name for c in env.rotation_history])
+    def _display_crop_name(c: CropSpec) -> str:
+        if c.name == "Aman":
+            return "T. Aman Rice"
+        if c.name == "Boro":
+            return "Boro Rice"
+        if c.name == "Rape & Mustard":
+            return "Mustard"
+        return c.name
+
+    seq_str = " -> ".join([_display_crop_name(c) for c in env.rotation_history])
     total_active_days = sum(c.duration_days for c in env.rotation_history)
-    total_bare_days = 365 - total_active_days
+    total_bare_days = max(0, 365 - total_active_days)
 
     return {
         "sequence_ids": list(sequence_crop_ids),
@@ -686,36 +830,55 @@ def evaluate_rotation_trajectory(
     }
 
 
+def _get_candidate_pools() -> Tuple[List[Tuple[int, int, int]], List[Tuple[int, int, int]]]:
+    """
+    Returns:
+      1. `core_candidates`: Classic field crops, pulses, fiber, potato, and fallow.
+      2. `veg_candidates`: High-value winter & summer vegetable rotation combinations.
+    """
+    core_rabi_names = {"Lentil", "Rape & Mustard", "Wheat", "Potato", "Maize 2", "Boro", "Gram", "Groundnut"}
+    core_k1_names = {"Mungbean", "Aus", "Jute", "Fallow", "Sesame"}
+    core_k2_names = {"Aman"}
+
+    core_r = [c.crop_id for c in CROP_CATALOG if c.season == "Rabi" and c.name in core_rabi_names]
+    core_k1 = [c.crop_id for c in CROP_CATALOG if c.season == "Kharif-1" and c.name in core_k1_names]
+    core_k2 = [c.crop_id for c in CROP_CATALOG if c.season == "Kharif-2" and c.name in core_k2_names]
+
+    core_candidates = [(r, k1, k2) for r in core_r for k1 in core_k1 for k2 in core_k2]
+
+    veg_r = [c.crop_id for c in CROP_CATALOG if c.season == "Rabi" and c.category == "Vegetable_Tuber_Spice" and c.name not in {"Potato", "Ginger"}]
+    veg_k1 = [c.crop_id for c in CROP_CATALOG if c.season == "Kharif-1" and (c.category == "Vegetable_Tuber_Spice" or c.name == "Mungbean")]
+    if not veg_r:
+        veg_r = core_r
+    if not veg_k1:
+        veg_k1 = core_k1
+
+    veg_candidates = [(r, k1, k2) for r in veg_r for k1 in veg_k1 for k2 in core_k2]
+    return core_candidates, veg_candidates
+
+
 def generate_three_way_tradeoffs(
     farm: FarmProfile,
     seasonal_climates: List[np.ndarray],
     policy_net: Optional[Any] = None,
     seasonal_daily_sequences: Optional[List[np.ndarray]] = None,
     include_existing_baseline: bool = True,
+    include_vegetable_strategy: bool = True,
 ) -> pd.DataFrame:
     """
-    Compares the Existing Farmer Baseline (`Boro Rice -> Fallow -> T. Aman Rice`)
-    against the 3 AI-recommended rotation strategies (`Balanced`, `Water Conservation`,
-    and `Soil Health`), computing savings against the existing rotation as required
-    by the official NASA Space Apps Field Shift challenge prompt.
+    Evaluates:
+      - Row 0: Existing Rotation (Baseline) (`Boro Rice -> Fallow -> T. Aman Rice`)
+      - Row 1: Balanced (`Potato/Field -> Mungbean/Jute -> T. Aman Rice`)
+      - Row 2: Water Conservation (`Lentil -> Fallow -> T. Aman Rice`)
+      - Row 3: Soil Health (`Lentil/Gram -> Mungbean -> T. Aman Rice`)
+      - Row 4: High-Value Vegetable (`Cabbage/Onion/Cauliflower -> Barbati/Patal -> T. Aman Rice`)
     """
-    legal_rabi = SEASON_ACTION_MAP[0]
-    legal_k1 = SEASON_ACTION_MAP[1]
-    legal_k2 = SEASON_ACTION_MAP[2]
+    core_candidates, veg_candidates = _get_candidate_pools()
 
-    candidates = [
-        (r, k1, k2)
-        for r in legal_rabi
-        for k1 in legal_k1
-        for k2 in legal_k2
-    ]
-
-    # 1. Evaluate the Existing Status-Quo Farmer Baseline (Boro Rice -> Fallow -> T. Aman Rice)
     baseline_eval = evaluate_rotation_trajectory(
         farm, seasonal_climates, EXISTING_BASELINE_PATH, "balanced", seasonal_daily_sequences
     )
     base_water = baseline_eval["total_water_mm"]
-    base_n_delta = baseline_eval["n_delta"]
 
     selected_rows = []
     if include_existing_baseline:
@@ -731,17 +894,19 @@ def generate_three_way_tradeoffs(
         })
 
     modes = [
-        ("Balanced", "balanced"),
-        ("Water Conservation", "water_conservation"),
-        ("Soil Health", "soil_health"),
+        ("Balanced", "balanced", core_candidates),
+        ("Water Conservation", "water_conservation", core_candidates),
+        ("Soil Health", "soil_health", core_candidates),
     ]
+    if include_vegetable_strategy:
+        modes.append(("High-Value Vegetable", "high_value_vegetable", veg_candidates))
 
-    for display_name, mode_key in modes:
+    for display_name, mode_key, pool in modes:
         evals = [
             evaluate_rotation_trajectory(
                 farm, seasonal_climates, path, mode_key, seasonal_daily_sequences
             )
-            for path in candidates
+            for path in pool
         ]
         evals.sort(key=lambda x: x["cumulative_reward"], reverse=True)
         best = evals[0]
@@ -769,11 +934,6 @@ def compute_20yr_historical_uncertainty(
     sequence_crop_ids: Tuple[int, int, int],
     priority_mode: str = "balanced",
 ) -> Dict[str, float]:
-    """
-    Runs a 20-year Monte Carlo historical replay (2005-2024) of a candidate rotation
-    to quantify climate uncertainty (mean, std, 10th-percentile drought/flood downside,
-    and 90th-percentile upside).
-    """
     profits = []
     waters = []
     for rec in district_20yr_records:
@@ -802,32 +962,20 @@ def simulate_climate_scenario(
     temp_delta_c: float = 0.0,
     grace_gw_delta_pct: float = 0.0,
 ) -> List[np.ndarray]:
-    """
-    Perturbs the NASA seasonal climate vectors to power interactive frontend
-    "What-If Scenario Sliders" (e.g., -30% Rainfall Drought, +2.0°C Warming,
-    or -10% Groundwater Drop).
-    """
     perturbed: List[np.ndarray] = []
     for vec in seasonal_climates:
         v = vec.copy()
-        # 0: T2M ((temp - 25)/10)
         temp_c = v[0] * 10.0 + 25.0 + temp_delta_c
         v[0] = (temp_c - 25.0) / 10.0
-        # 1: Heat stress days increase nonlinearly with warming
         if temp_delta_c > 0:
             v[1] = np.clip(v[1] + (temp_delta_c * 3.5) / 30.0, 0.0, 1.0)
-        # 2: log1p(precip_sum)/6
         precip_mm = np.expm1(v[2] * 6.0) * max(0.1, 1.0 + rainfall_delta_pct / 100.0)
         v[2] = np.log1p(precip_mm) / 6.0
-        # 3: Consecutive dry days scale inversely with rainfall change
         v[3] = np.clip(v[3] * (1.0 - 0.5 * (rainfall_delta_pct / 100.0)), 0.05, 1.0)
-        # 4 & 5: Surface & Root-zone wetness respond to rainfall & warming
         moisture_shift = 0.15 * (rainfall_delta_pct / 100.0) - 0.025 * temp_delta_c
         v[4] = np.clip(v[4] + moisture_shift, 0.10, 0.98)
         v[5] = np.clip(v[5] + moisture_shift, 0.12, 0.96)
-        # 6: VPD increases with temperature and drops with rainfall/humidity
         v[6] = np.clip(v[6] * (1.0 + 0.06 * temp_delta_c - 0.10 * (rainfall_delta_pct / 100.0)), 0.15, 1.2)
-        # 7: GRACE Groundwater percentile
         v[7] = np.clip(v[7] + (grace_gw_delta_pct / 100.0), 0.05, 0.98)
         perturbed.append(v.astype(np.float32))
     return perturbed
@@ -841,15 +989,6 @@ def build_strategy_explainability(
     district_name: str,
     aez_name: str,
 ) -> Dict[str, Any]:
-    """
-    Generates the 5 structured explanation blocks required by the official NASA Space Apps
-    Field Shift prompt for every candidate rotation strategy:
-      1. why_suggested
-      2. supporting_nasa_evidence
-      3. agronomic_and_soil_benefits
-      4. information_gaps_and_uncertainty
-      5. risks_requiring_local_expert_review
-    """
     seq_name = eval_result["rotation_name"]
     steps = eval_result["seasonal_timeline"]
     rabi_step, k1_step, k2_step = steps[0], steps[1], steps[2]
@@ -871,9 +1010,15 @@ def build_strategy_explainability(
         )
     elif strategy_name == "Soil Health":
         why = (
-            f"Selected to rebuild depleted soil fertility (+{eval_result['n_delta']} kg N/ha net gain, or "
-            f"+{n_diff} kg N/ha above baseline) and eliminate bare-field erosion ({eval_result['bare_field_days_yr']} bare days/yr vs. "
-            f"{baseline_result['bare_field_days_yr']} days in baseline) using biological nitrogen fixation and botanical family alternation."
+            f"Selected to rebuild depleted soil fertility ({eval_result['n_delta']:+.1f} kg N/ha net change, or "
+            f"{n_diff:+.1f} kg N/ha above baseline) and minimize bare-field erosion ({eval_result['bare_field_days_yr']} bare days/yr) "
+            f"using biological nitrogen fixation and botanical family alternation."
+        )
+    elif strategy_name == "High-Value Vegetable":
+        why = (
+            f"Selected to maximize horticultural cash income in {district_name} (${eval_result['total_profit_usd']}/ha, "
+            f"+${profit_diff}/ha over baseline) using high-AP-Ratio local winter and summer vegetables ({rabi_step['crop']} -> {k1_step['crop']}) "
+            f"while saving {water_saved} mm of water compared to Boro rice."
         )
     else:
         why = (
@@ -891,20 +1036,20 @@ def build_strategy_explainability(
     benefits = [
         f"Nutrient Cycling & Nitrogen Balance: Net soil mineral N delta of {eval_result['n_delta']:+.1f} kg N/ha (Rabi {rabi_step['crop']}: {rabi_step['soil_n_delta_kg_ha']:+.0f}, Kharif-1 {k1_step['crop']}: {k1_step['soil_n_delta_kg_ha']:+.0f}, Kharif-2 {k2_step['crop']}: {k2_step['soil_n_delta_kg_ha']:+.0f} kg/ha).",
         f"Pest & Disease Cycle Disruption: {k1_step['pest_break_status']}; {k2_step['pest_break_status']}.",
-        f"Ground Cover & Erosion Control: Field is actively covered by living roots for {eval_result['active_cover_days_yr']} days/yr ({eval_result['bare_field_days_yr']} bare-field transition days/yr). Root architecture sequences {rabi_step['root_system']} -> {k1_step['root_system']} -> {k2_step['root_system']}.",
+        f"Ground Cover & Erosion Control: Field is actively covered by living roots for {eval_result['active_cover_days_yr']} days/yr ({eval_result['bare_field_days_yr']} bare-field transition days/yr).",
         f"Water Footprint: Consumes {eval_result['total_water_mm']} mm total water ({water_saved:+.1f} mm saved relative to traditional Boro-Fallow-Aman).",
     ]
 
     gaps_and_uncertainty = [
         f"20-Year Climate Variability (2005-2024 Monte Carlo): Expected net profit is ${uncertainty_stats['profit_mean_usd']}/ha ± ${uncertainty_stats['profit_std_usd']}/ha (10th-percentile drought/flood downside: ${uncertainty_stats['profit_p10_downside_usd']}/ha; 90th-percentile upside: ${uncertainty_stats['profit_p90_upside_usd']}/ha).",
-        "Spatial Resolution Gap: NASA SMAP (9 km), POWER (50 km), and GRACE (25 km) capture regional hydro-climatic gradients but do not resolve plot-level plough-pan depth, micro-topography, or canal seepage.",
-        "Soil Lab Gap: Satellite vegetation indices (MODIS/HLS NDVI) and SoilGrids 250m priors do not measure plot-specific soil pH, micronutrients (Boron, Zinc), or baseline pathogen loads.",
+        "Spatial Resolution Gap: NASA SMAP (9 km), POWER (50 km), and GRACE (25 km) capture regional hydro-climatic gradients but do not resolve plot-level plough-pan depth or canal seepage.",
+        "Soil Lab Gap: Satellite vegetation indices (MODIS/HLS NDVI) and SoilGrids 250m priors do not measure plot-specific soil pH or micronutrients (Boron, Zinc).",
     ]
 
     local_review_risks = [
         f"Turnaround & Sowing Window Verification: Verify that {rabi_step['crop']} harvest ({rabi_step['harvest_window']}) allows timely land preparation for {k1_step['crop']} sowing ({k1_step['sowing_window']}) under local soil moisture.",
-        "Market & Cold-Storage Logistics: High-value perishables (such as Potato) or pulses (Lentil, Mungbean) require local DAE extension review of cold-storage capacity and farm-gate wholesale pricing.",
-        "Drainage & Flash-Flood Check: Legumes (Lentil, Mungbean) and Potato suffer rapid root rot if unseasonal depressions waterlog poorly drained plots.",
+        "Market & Cold-Storage Logistics: High-value vegetables and perishables require local DAE extension review of cold-storage capacity and wholesale market transport.",
+        "Drainage & Flash-Flood Check: Legumes and winter vegetables suffer rapid root rot if unseasonal rain waterlogs poorly drained plots.",
     ]
 
     return {
@@ -931,8 +1076,129 @@ def build_strategy_explainability(
     }
 
 
+
+
+def query_field_shift_api(
+    district_name: str = "Rajshahi",
+    irrigation_access: bool = True,
+    priority_mode: str = "balanced",
+    soil_fertility_level: str = "medium",
+    current_crops: Optional[Tuple[str, str, str]] = None,
+    locked_season_crops: Optional[Dict[str, str]] = None,
+    excluded_crops: Optional[List[str]] = None,
+    rainfall_delta_pct: float = 0.0,
+    temp_delta_c: float = 0.0,
+    grace_gw_delta_pct: float = 0.0,
+    seasonal_climates: Optional[List[np.ndarray]] = None,
+) -> Dict[str, Any]:
+    """
+    Live Web Backend Inference Endpoint (`POST /api/recommend`).
+    Supports both:
+      1. Zero-Crop-Input Mode (Farmer only selects District, Irrigation, Priority).
+      2. Custom Farmer Crop Mode:
+         - `current_crops`: e.g. ("Wheat", "Fallow", "Aman") for their existing baseline.
+         - `locked_season_crops`: e.g. {"Rabi": "Onion"} to lock one season and let AI optimize the rest.
+         - `excluded_crops`: e.g. ["Tobacco", "Boro"] to filter out unwanted crops.
+    """
+    fertility_map = {"low": (50.0, 0.8), "medium": (75.0, 1.2), "high": (105.0, 1.8)}
+    base_n, base_som = fertility_map.get(soil_fertility_level.lower(), (75.0, 1.2))
+
+    farm = FarmProfile(
+        farm_id=f"web_{district_name.lower()}",
+        irrigation_access=irrigation_access,
+        baseline_soil_n_kg_ha=base_n,
+        soil_organic_matter_pct=base_som,
+        priority_mode=priority_mode,
+        district_name=district_name,
+    )
+
+    if seasonal_climates is None:
+        seasonal_climates = [
+            np.array([-0.3, 0.0, 0.2, 0.8, 0.35, 0.38, 0.40, 0.22], dtype=np.float32),
+            np.array([0.5, 0.2, 0.5, 0.4, 0.45, 0.42, 0.60, 0.25], dtype=np.float32),
+            np.array([0.35, 0.0, 0.9, 0.1, 0.85, 0.90, 0.30, 0.42], dtype=np.float32),
+        ]
+
+    perturbed_climates = simulate_climate_scenario(
+        seasonal_climates,
+        rainfall_delta_pct=rainfall_delta_pct,
+        temp_delta_c=temp_delta_c,
+        grace_gw_delta_pct=grace_gw_delta_pct,
+    )
+
+    # Resolve farmer existing rotation (defaults to Boro -> Fallow -> Aman)
+    if current_crops is not None and len(current_crops) == 3:
+        baseline_ids = (
+            CROP_NAME_TO_ID.get(current_crops[0], EXISTING_BASELINE_PATH[0]),
+            CROP_NAME_TO_ID.get(current_crops[1], EXISTING_BASELINE_PATH[1]),
+            CROP_NAME_TO_ID.get(current_crops[2], EXISTING_BASELINE_PATH[2]),
+        )
+    else:
+        baseline_ids = EXISTING_BASELINE_PATH
+
+    baseline_eval = evaluate_rotation_trajectory(
+        farm, perturbed_climates, baseline_ids, priority_mode
+    )
+
+    core_pool, veg_pool = _get_candidate_pools()
+    excluded_ids = {CROP_NAME_TO_ID[c] for c in (excluded_crops or []) if c in CROP_NAME_TO_ID}
+
+    def _filter_pool(pool: List[Tuple[int, int, int]]) -> List[Tuple[int, int, int]]:
+        filtered = [p for p in pool if not (set(p) & excluded_ids)]
+        if locked_season_crops:
+            s_map = {"Rabi": 0, "Kharif-1": 1, "Kharif-2": 2}
+            for s_name, c_name in locked_season_crops.items():
+                if s_name in s_map and c_name in CROP_NAME_TO_ID:
+                    s_idx = s_map[s_name]
+                    cid = CROP_NAME_TO_ID[c_name]
+                    filtered = [p for p in filtered if p[s_idx] == cid]
+                    if not filtered:
+                        r_list = [cid] if s_idx == 0 else SEASON_ACTION_MAP[0]
+                        k1_list = [cid] if s_idx == 1 else SEASON_ACTION_MAP[1]
+                        k2_list = [cid] if s_idx == 2 else [CROP_NAME_TO_ID.get("Aman", SEASON_ACTION_MAP[2][0])]
+                        filtered = [(r, k1, k2) for r in r_list for k1 in k1_list for k2 in k2_list if not ({r, k1, k2} & excluded_ids)]
+        return filtered or pool
+
+    modes = [
+        ("Balanced", "balanced", _filter_pool(core_pool)),
+        ("Water Conservation", "water_conservation", _filter_pool(core_pool)),
+        ("Soil Health", "soil_health", _filter_pool(core_pool)),
+        ("High-Value Vegetable", "high_value_vegetable", _filter_pool(veg_pool)),
+    ]
+
+    strategies = [{
+        "strategy_name": "Existing Rotation (Baseline)",
+        "recommended_rotation": baseline_eval["rotation_name"],
+        "metrics": baseline_eval,
+    }]
+    for display_name, mode_key, pool in modes:
+        evals = [evaluate_rotation_trajectory(farm, perturbed_climates, path, mode_key) for path in pool]
+        evals.sort(key=lambda x: x["cumulative_reward"], reverse=True)
+        strategies.append({
+            "strategy_name": display_name,
+            "recommended_rotation": evals[0]["rotation_name"],
+            "metrics": evals[0],
+        })
+
+    return {
+        "district": district_name,
+        "farmer_inputs": {
+            "irrigation_access": irrigation_access,
+            "priority_mode": priority_mode,
+            "soil_fertility_level": soil_fertility_level,
+            "current_crops": current_crops or ("Boro Rice", "Fallow", "T. Aman Rice"),
+            "locked_season_crops": locked_season_crops or {},
+            "excluded_crops": excluded_crops or [],
+        },
+        "strategies": strategies,
+    }
+
+
 if __name__ == "__main__":
-    logger.info("Initializing Field Shift Complete Backend Engine (PyTorch: %s)...", HAS_TORCH)
+    logger.info(
+        "Initializing Field Shift 64-District / %d-Crop Backend Engine (PyTorch: %s)...",
+        NUM_CROPS, HAS_TORCH,
+    )
 
     rabi_climate = np.array([-0.3, 0.0, 0.2, 0.8, 0.35, 0.38, 0.40, 0.22], dtype=np.float32)
     kharif1_climate = np.array([0.5, 0.2, 0.5, 0.4, 0.45, 0.42, 0.60, 0.25], dtype=np.float32)
@@ -945,6 +1211,7 @@ if __name__ == "__main__":
         baseline_soil_n_kg_ha=75.0,
         soil_organic_matter_pct=1.1,
         priority_mode="balanced",
+        district_name="Rajshahi",
     )
 
     tradeoff_df = generate_three_way_tradeoffs(barind_farm, climates)

@@ -1,6 +1,5 @@
 """
 Field Shift: Multi-District 20-Year NASA Earth Observation Dataset & Cache Builder
-==================================================================================
 
 Provides:
 1. Bulk multi-decade (e.g., 2005-2024, 20 years) daily agroclimatology fetching from
@@ -245,9 +244,8 @@ class NASAPowerClient:
         return out
 
 
-# =============================================================================
+
 # DAILY SEQUENCE TENSOR BUILDER FOR BI-LSTM / TEMPORAL ATTENTION
-# =============================================================================
 
 def normalize_daily_sequence(df_slice: pd.DataFrame, seq_len: int = 120) -> np.ndarray:
     """

@@ -7,6 +7,8 @@ NASA Space Apps Challenge 2026 project for climate-aware crop-rotation decision 
 ```text
 .
 ├── artifacts/models/     Trained model checkpoints
+├── database/schema/       Relational database schema
+├── database/seeders/      Database seeding workflow
 ├── data/raw/             Source datasets and downloads
 ├── data/processed/       Prepared datasets for experiments
 ├── docs/                 Challenge brief, research notes, and data guide
@@ -32,6 +34,12 @@ NASA Space Apps Challenge 2026 project for climate-aware crop-rotation decision 
 
    ```powershell
    uv run python scripts/integrate_nasa_with_rl.py
+   ```
+
+5. Run the database seeder from the project root:
+
+   ```powershell
+   uv run python database/seeders/field_shift_db_seeder.py
    ```
 
 Generated caches are stored under `data/cache/`, model checkpoints under `artifacts/models/`, and frontend-ready exports under `outputs/`.

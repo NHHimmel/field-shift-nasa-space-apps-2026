@@ -21,3 +21,7 @@ data/raw/*
 !data/raw/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+
+# Local database and generated seed payload
+*.db
+field_shift_64_districts_payload.json
