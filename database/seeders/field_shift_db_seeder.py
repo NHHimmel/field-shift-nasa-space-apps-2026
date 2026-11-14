@@ -24,7 +24,7 @@ What This Script Does Step-by-Step:
      - `Soil Health` (Maximum legume biological N-fixation & pest-cycle break)
      - `High-Value Vegetable` (Incorporates top district vegetables/spices/tubers
        such as `Cabbage`, `Cauliflower`, `Onion`, `Garlic`, `Chili`, `Barbati`,
-       `Lady's Finger`, `Jhinga`, or `Cucumber` into the rotation).
+       `Jhinga`, or `Cucumber` into the rotation).
 5. Seeds either a live MySQL server (when `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`
    are set) OR a local SQLite relational database (`field_shift_bangladesh.db`)
    using the exact same 5-table relational schema, and exports the complete
@@ -114,8 +114,6 @@ CROP_AGRONOMIC_SPECS: Dict[str, Tuple[str, str, str, int, float, float, float, f
     "Gourd": ("Vegetable_Tuber_Spice", "Cucurbitaceae", "Rabi", 100, 300.0, -18.0, 1190.0, 0.68, 0.35),
 
     # --- SUMMER / PRE-MONSOON (KHARIF-1) & MONSOON (KHARIF-2) VEGETABLES ---
-    "Lady\u2019s Finger": ("Vegetable_Tuber_Spice", "Malvaceae", "Kharif-1", 75, 290.0, -15.0, 1060.0, 0.72, 0.55),
-    "Lady's Finger": ("Vegetable_Tuber_Spice", "Malvaceae", "Kharif-1", 75, 290.0, -15.0, 1060.0, 0.72, 0.55),
     "Jhinga": ("Vegetable_Tuber_Spice", "Cucurbitaceae", "Kharif-1", 80, 310.0, -14.0, 1040.0, 0.68, 0.60),
     "Kakrol": ("Vegetable_Tuber_Spice", "Cucurbitaceae", "Kharif-1", 85, 320.0, -15.0, 1120.0, 0.68, 0.60),
     "Chalkumra": ("Vegetable_Tuber_Spice", "Cucurbitaceae", "Kharif-1", 85, 320.0, -15.0, 1080.0, 0.68, 0.65),
@@ -181,6 +179,17 @@ def get_crop_spec(crop_name: str, raw_season: str) -> Dict[str, Any]:
 # 2. SPREADSHEET PARSER & 64-DISTRICT ROTATION / ORCHARD OPTIMIZER
 # =============================================================================
 
+# Crops present in the spreadsheet that the project no longer uses; their rows are skipped.
+# Matched by (first word, last word) because the sheet's apostrophe is mis-encoded ("Lady鈥檚 Finger").
+EXCLUDED_CROPS = {("lady", "finger")}
+
+
+def _is_excluded_crop(name: str) -> bool:
+    words = str(name).strip().lower().split()
+    return bool(words) and any(
+        words[0].startswith(first) and words[-1] == last for first, last in EXCLUDED_CROPS
+    )
+
 def process_spreadsheet_and_optimize(
     excel_path: str,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, Dict[str, Any]]:
@@ -191,6 +200,12 @@ def process_spreadsheet_and_optimize(
     """
     logger.info("Step 1: Reading uploaded spreadsheet '%s'...", excel_path)
     raw_df = pd.read_excel(excel_path, sheet_name="Sheet1")
+    # Drop crops removed from the project.
+    dropped = raw_df["Crop Name"].map(_is_excluded_crop)
+    if dropped.any():
+        logger.info("Skipping %d spreadsheet rows for excluded crops: %s",
+                    int(dropped.sum()), ", ".join(sorted(raw_df.loc[dropped, "Crop Name"].astype(str).unique())))
+    raw_df = raw_df[~dropped].reset_index(drop=True)
     logger.info("Loaded %d district-crop records across %d districts and %d crops.",
                 len(raw_df), raw_df["District"].nunique(), raw_df["Crop Name"].nunique())
 
@@ -412,7 +427,7 @@ def process_spreadsheet_and_optimize(
         rabi_field = [c for c in ["Lentil", "Gram", "Rape & Mustard", "Wheat", "Maize 2", "Groundnut"] if c in dist_crop_perf]
         rabi_veg = [c for c in ["Cabbage", "Cauliflower", "Onion", "Garlic", "Chili", "Sweet Potato", "Carrot", "Beans"] if c in dist_crop_perf]
         k1_field = [c for c in ["Mug", "Jute", "Aus", "Sesame", "Fallow"] if c in dist_crop_perf]
-        k1_veg = [c for c in ["Barbati", "Lady\u2019s Finger", "Jhinga", "Cucumber", "Karala", "Patal", "Chalkumra"] if c in dist_crop_perf]
+        k1_veg = [c for c in ["Barbati", "Jhinga", "Cucumber", "Karala", "Patal", "Chalkumra"] if c in dist_crop_perf]
         k2_pool = [c for c in ["Aman", "Mashkalai"] if c in dist_crop_perf]
 
         # 2. Balanced Strategy (Field crops + pulses)

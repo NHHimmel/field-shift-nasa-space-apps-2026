@@ -52,8 +52,6 @@ CROP_NAMES: Dict[str, Tuple[str, str]] = {
     "Pumpkin": ("Sweet pumpkin", "মিষ্টি কুমড়া"),
     "Gourd": ("Bottle gourd", "লাউ"),
     # Summer / monsoon vegetables
-    "Lady’s Finger": ("Okra (Dherosh)", "ঢেঁড়স"),
-    "Lady's Finger": ("Okra (Dherosh)", "ঢেঁড়স"),
     "Jhinga": ("Ridge gourd (Jhinga)", "ঝিঙা"),
     "Kakrol": ("Spiny gourd (Kakrol)", "কাঁকরোল"),
     "Chalkumra": ("Ash gourd (Chalkumra)", "চালকুমড়া"),
