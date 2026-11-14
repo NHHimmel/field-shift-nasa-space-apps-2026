@@ -22,6 +22,11 @@ data/raw/*
 data/processed/*
 !data/processed/.gitkeep
 
+# Website (React build + dependencies, FastAPI runtime cache)
+node_modules/
+React/dist/
+FastApi/data/
+
 # Local database and generated seed payload
 *.db
 field_shift_64_districts_payload.json

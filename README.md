@@ -44,6 +44,36 @@ NASA Space Apps Challenge 2026 project for climate-aware crop-rotation decision 
 
 Generated caches are stored under `data/cache/`, model checkpoints under `artifacts/models/`, and frontend-ready exports under `outputs/`.
 
+## Website (FastAPI + React, বাংলা / English)
+
+```text
+FastApi/app/   main.py (routes) · engine.py (live model runs) · units.py (USD/ha -> Taka/bigha)
+               explainer.py (Gemini, placeholder-based, numbers never touched by the LLM) · cache.py (SQLite)
+React/src/     pages/ (Home, Results, About) · components/ · i18n/strings.ts (all UI text, bn + en)
+```
+
+1. Backend (from the project root):
+
+   ```powershell
+   uv run uvicorn app.main:app --app-dir FastApi --reload --reload-dir FastApi
+   ```
+
+   API docs: http://127.0.0.1:8000/docs. Set `GEMINI_API_KEY` in `.env` for AI explanations; without it a built-in bilingual template is used.
+
+2. Frontend (second terminal):
+
+   ```powershell
+   cd React
+   npm install
+   npm run dev
+   ```
+
+   Open http://localhost:5173. For a single-server deploy run `npm run build`; FastAPI then serves `React/dist`.
+
+3. Tests: `uv run pytest`.
+
+No login and no user database: the farmer's answers live in the URL, so results can be bookmarked or shared.
+
 ## Important note
 
 Field Shift is a decision-support prototype. Its recommendations should be reviewed with local agronomic expertise, field observations, and plot-level soil testing before use.
