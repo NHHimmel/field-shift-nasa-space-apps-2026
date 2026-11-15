@@ -85,7 +85,7 @@ export function BangladeshMap({
         {/* Compass indicator */}
         <g className="bd-map-compass" transform="translate(268, 32)">
           <circle cx="0" cy="0" r="10" className="compass-ring" />
-          <polygon points="0,-7 3,0 0,-2 -3,0" fill="#1f6b3a" />
+          <polygon points="0,-7 3,0 0,-2 -3,0" fill="#136248" />
           <polygon points="0,7 3,0 0,2 -3,0" fill="#999" />
           <text x="0" y="-10" textAnchor="middle" className="compass-text">N</text>
         </g>

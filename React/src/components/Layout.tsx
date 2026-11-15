@@ -41,9 +41,18 @@ function LangToggle() {
 function Logo({ href }: { href: string }) {
   const { t } = useI18n()
   return (
-    <a className="nav__logo" href={href}>
-      <span className="mark mark--initial" aria-hidden="true">F</span>
-      {t('app.name')}
+    <a className="nav__logo" href={href} aria-label={t('app.name')}>
+      <span className="nav__logo-icon" aria-hidden="true">
+        <svg viewBox="0 0 28 28" width="28" height="28" className="logo-svg">
+          <circle cx="14" cy="14" r="13" fill="#136248" />
+          <ellipse cx="14" cy="14" rx="11" ry="5" fill="none" stroke="#99dfbe" strokeWidth="1.2" transform="rotate(-25 14 14)" strokeDasharray="2,2" opacity="0.85" />
+          <circle cx="21" cy="9" r="1.8" fill="#ffffff" />
+          <path d="M14 20 C14 15 11 13 8 13 C8 17 11 20 14 20 Z" fill="#60d394" />
+          <path d="M14 20 C14 13 18 10 21 11 C21 15 17 19 14 20 Z" fill="#ffffff" />
+          <path d="M14 20 L14 12" stroke="#05333a" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      </span>
+      <span className="nav__logo-text">{t('app.name')}</span>
     </a>
   )
 }

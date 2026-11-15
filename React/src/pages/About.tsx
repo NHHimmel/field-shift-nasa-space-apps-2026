@@ -21,6 +21,9 @@ export default function About() {
     <div className="page">
       <div className="wrap">
         <header className="page__head">
+          <div className="section-tag-row">
+            <span className="badge-pill">🛰️ Earth Observation & Living Canopy</span>
+          </div>
           <h1>{t('about.title')}</h1>
           <p className="t-lead measure">{t('about.intro')}</p>
           <div className="btn-row"><a className="btn btn--primary" href="/#plan">{t('cta.main')}<Arrow /></a></div>
