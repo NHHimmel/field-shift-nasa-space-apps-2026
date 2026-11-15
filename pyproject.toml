@@ -3,7 +3,7 @@ name = "nasa-space-apps-2026"
 version = "0.1.0"
 description = "NASA Earth observation and reinforcement-learning decision support for climate-resilient crop rotation"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.162.7",
     "httpx>=0.28.1",

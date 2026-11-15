@@ -1,0 +1,10 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+React/node_modules
+React/.taste-skill
+React/dist
+data/cache/*
+!data/cache/.gitkeep
