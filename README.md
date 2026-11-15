@@ -1,3 +1,13 @@
+---
+title: Field Shift - NASA Space Apps 2026
+emoji: 🛰️🌱
+colorFrom: green
+colorTo: blue
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
 # Field Shift: Adapting Farms with NASA Data
 
 NASA Space Apps Challenge 2026 project for climate-aware crop-rotation decision support in Northwest Bangladesh.
