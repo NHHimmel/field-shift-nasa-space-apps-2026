@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { getMeta, getRecommendation } from '../api/client'
 import { PRIORITIES, type StrategyKey } from '../api/types'
+import { DistrictLocationCard } from '../components/DistrictLocationCard'
 import { EvidencePanel } from '../components/EvidencePanel'
 import { Explanation } from '../components/Explanation'
 import { CompareList, CropCalendar, RangeBar, ScenarioPanel, StressChart } from '../components/Insights'
+import { NasaClimateCards } from '../components/NasaClimateCards'
 import { SeasonTiles, StatTiles } from '../components/PlanSummary'
 import { RefineForm } from '../components/RefineForm'
 import { useI18n } from '../i18n/I18nProvider'
@@ -122,13 +124,17 @@ export default function Results() {
         ))}
       </div>
 
+      <DistrictLocationCard district={data.district} names={names} />
+
       <section className="card plan">
         <h2>{strategy === 'baseline' ? t('res.currentTitle') : t('res.planTitle')}</h2>
         <SeasonTiles card={card} names={names} />
         <StatTiles card={card} />
       </section>
 
-      <Explanation req={req} strategy={strategy} />
+      <NasaClimateCards card={card} district={data.district} dataInfo={data.data_info} />
+
+      <Explanation req={req} strategy={strategy} card={card} rec={data} />
       <EvidencePanel rec={data} />
       <RangeBar card={card} years={data.data_info.climate_years} />
       <CropCalendar card={card} names={names} />

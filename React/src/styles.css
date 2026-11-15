@@ -250,3 +250,127 @@ html footer.closing.footer--statement > .wrap { height: auto; row-gap: var(--s-9
   .evidence-grid { grid-template-columns: 1fr; }
   .evidence-wide { grid-column: auto; }
 }
+
+/* ---------------------------------------------------------------- District map & location card */
+.district-location-card { background: #fff; border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s-5); margin-bottom: var(--s-4); }
+.district-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--s-4); flex-wrap: wrap; gap: var(--s-2); }
+.district-badge-division { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: var(--r-btn); background: var(--surface); color: var(--muted); font-size: var(--t-small); font-weight: 500; }
+.district-card-grid { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+@media (max-width: 768px) { .district-card-grid { grid-template-columns: 1fr; } }
+
+.bd-map-container { position: relative; width: 100%; max-width: 280px; margin: 0 auto; background: var(--surface); border-radius: var(--r-md); padding: var(--s-3); border: 1px solid var(--line); box-sizing: border-box; }
+.bd-map-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.bd-map-grid line { stroke: color-mix(in oklab, var(--line-strong) 40%, transparent); stroke-width: 0.7; }
+.bd-map-country { fill: #e5ede8; stroke: #1f6b3a; stroke-width: 1.5; stroke-linejoin: round; transition: fill 0.2s ease; }
+.bd-map-country:hover { fill: #d8e6dc; }
+.bd-map-water-label { fill: #52796f; font-size: 11px; font-style: italic; font-family: var(--font-text); opacity: 0.8; }
+.bd-map-coord-label { fill: var(--muted); font-size: 8.5px; font-family: var(--font-text); opacity: 0.7; }
+.bd-map-compass .compass-ring { fill: #fff; stroke: var(--line); stroke-width: 1; }
+.bd-map-compass .compass-text { font-size: 8px; font-weight: bold; fill: #1f6b3a; font-family: var(--font-text); }
+.pin-pulse { fill: rgba(194, 90, 28, 0.4); animation: map-pulse 2s infinite cubic-bezier(0.2, 0, 0, 1); }
+.pin-dot { fill: #c25a1c; stroke: #fff; stroke-width: 1.5; }
+.pin-tag-bg { fill: rgba(20, 20, 20, 0.85); backdrop-filter: blur(4px); }
+.pin-tag-text { fill: #fff; font-size: 10.5px; font-weight: 500; font-family: var(--font-text); }
+@keyframes map-pulse { 0% { r: 5px; opacity: 0.9; } 100% { r: 18px; opacity: 0; } }
+.bd-map-meta { display: flex; justify-content: space-between; align-items: center; margin-top: var(--s-2); font-size: 12px; color: var(--muted); flex-wrap: wrap; gap: 4px; }
+.bd-map-meta-loc { font-weight: 500; color: var(--ink); }
+
+.district-info-pane { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
+.district-main-name { font: 500 var(--t-h2)/1.2 var(--font-display); margin: 0; }
+.district-division-sub { color: var(--muted); font-size: var(--t-small); margin: 2px 0 0; }
+.district-props { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); margin: var(--s-2) 0 0; }
+@media (max-width: 480px) { .district-props { grid-template-columns: 1fr; } }
+.district-prop { display: flex; flex-direction: column; gap: 4px; padding: var(--s-3); background: var(--surface); border-radius: var(--r-md); }
+.district-prop dt { margin: 0; }
+.district-prop dd { margin: 0; font-size: var(--t-small); line-height: 1.4; }
+.prop-val-highlight { font-weight: 500; color: var(--ink); }
+.prop-gw-row { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.badge-gw-status { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--r-sm); font-size: 12px; font-weight: 500; }
+.badge-gw-status.low { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.badge-gw-status.ok { background: #f0fdf4; color: #166534; border: 1px solid #dcfce7; }
+.irr-tag { font-weight: 500; }
+.district-links-row { display: flex; gap: var(--s-2); margin-top: var(--s-2); flex-wrap: wrap; }
+.map-ext-link { text-decoration: none !important; font-size: var(--t-small); }
+
+/* ---------------------------------------------------------------- NASA Climate Cards */
+.nasa-climate-section { background: #fff; border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s-5); margin-bottom: var(--s-4); }
+.nasa-climate-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--s-3); margin-bottom: var(--s-4); }
+.nasa-climate-header h2 { margin: 0 0 2px !important; }
+.nasa-period-badge { display: inline-flex; align-items: center; padding: 4px 12px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-btn); font-size: 13px; font-weight: 500; }
+
+.nasa-climate-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-4); }
+@media (max-width: 768px) { .nasa-climate-grid { grid-template-columns: 1fr; } }
+
+.climate-card { display: flex; flex-direction: column; gap: var(--s-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--s-4); }
+.climate-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s-2); }
+.climate-card-title-group { display: flex; align-items: center; gap: var(--s-3); }
+.climate-icon { font-size: 1.8rem; line-height: 1; }
+.climate-card-name { font: 500 var(--t-lead)/1.2 var(--font-text); margin: 0; }
+.climate-source-tag { font-size: 11.5px; color: var(--muted); display: block; margin-top: 2px; }
+.climate-product-link { display: inline-flex; align-items: center; font-size: 12px; font-weight: 500; color: var(--action); text-decoration: none; padding: 3px 8px; border-radius: var(--r-sm); background: #fff; border: 1px solid var(--line-strong); white-space: nowrap; }
+.climate-product-link:hover { background: var(--line); }
+
+.climate-metric-hero { display: flex; align-items: baseline; gap: var(--s-2); }
+.hero-num { font: 600 1.9rem/1 var(--font-display); letter-spacing: -0.02em; color: var(--ink); }
+.hero-label { font-size: var(--t-small); color: var(--muted); }
+
+.climate-season-breakdown { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2); background: #fff; border-radius: var(--r-sm); padding: var(--s-2) var(--s-3); border: 1px solid var(--line); }
+.breakdown-item { display: flex; flex-direction: column; font-size: var(--t-small); }
+.season-tag { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+
+.climate-bars-group { display: grid; gap: 8px; background: #fff; border-radius: var(--r-sm); padding: var(--s-2) var(--s-3); border: 1px solid var(--line); }
+.climate-bar-row { display: flex; align-items: center; gap: var(--s-2); font-size: var(--t-small); }
+.bar-label { width: 62px; color: var(--muted); font-size: 12px; flex: none; }
+.bar-track { flex: 1; height: 8px; background: var(--surface); border-radius: 999px; overflow: hidden; }
+.bar-fill.soil { height: 100%; background: linear-gradient(90deg, #d4a373, #2a9d8f); border-radius: 999px; }
+.bar-val { font-weight: 500; width: 44px; text-align: right; font-size: 12px; flex: none; }
+
+.climate-card-alert { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--s-3); border-radius: var(--r-sm); font-size: var(--t-small); line-height: 1.35; }
+.climate-card-alert.warning { background: #fffbeb; color: #92400e; border: 1px solid #fef3c7; }
+.climate-card-alert.danger { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.climate-card-alert.ok { background: #f0fdf4; color: #166534; border: 1px solid #dcfce7; }
+
+.climate-grace-status-wrapper { display: grid; gap: 6px; background: #fff; border-radius: var(--r-sm); padding: var(--s-2) var(--s-3); border: 1px solid var(--line); }
+.grace-scale-bar { position: relative; height: 10px; border-radius: 999px; }
+.grace-scale-zones { position: absolute; inset: 0; border-radius: 999px; overflow: hidden; display: flex; }
+.zone-low { width: 30%; background: #fca5a5; }
+.zone-med { width: 30%; background: #fde047; }
+.zone-high { width: 40%; background: #86efac; }
+.grace-indicator-dot { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%); border: 2.5px solid #fff; background: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+.grace-scale-labels { display: flex; justify-content: space-between; font-size: 11px; }
+
+/* ---------------------------------------------------------------- Why this recommendation? Evidence tied to actual values */
+.explanation-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--s-4); flex-wrap: wrap; gap: var(--s-2); }
+.explanation-header h2 { margin: 0 !important; }
+.badge-strategy-tag { background: var(--action); color: var(--action-ink); padding: 2px 10px; border-radius: var(--r-btn); font-size: 13px; font-weight: 500; }
+
+.evidence-values-card { background: var(--surface); border-radius: var(--r-md); padding: var(--s-4); margin-bottom: var(--s-5); border: 1px solid var(--line); }
+.evidence-values-header h3 { font: 500 var(--t-lead)/1.3 var(--font-display); margin: 0 0 2px !important; }
+.evidence-values-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--s-3); margin-top: var(--s-3); }
+.evidence-val-box { background: #fff; border: 1px solid var(--line); border-radius: var(--r-sm); padding: var(--s-3); display: flex; flex-direction: column; gap: 4px; }
+.evidence-val-box.highlight { border-color: var(--action); box-shadow: 0 1px 4px rgba(0,0,0,0.06); background: #fcfdfc; }
+.val-box-head { display: flex; align-items: center; gap: var(--s-1); font-size: 12px; }
+.val-icon { font-size: 1.15rem; line-height: 1; }
+.val-title { font-weight: 500; flex: 1; }
+.val-source { font-size: 10px; color: var(--muted); background: var(--surface); padding: 1px 5px; border-radius: 3px; }
+.val-box-num { font: 600 1.25rem/1.2 var(--font-display); color: var(--ink); margin-block: 2px; }
+.val-box-why { font-size: 12.5px; color: var(--muted); line-height: 1.35; margin: 0; }
+
+.evidence-val-chip { display: inline-block; font-weight: 600; color: #166534; background: rgba(22, 101, 52, 0.08); padding: 1px 6px; border-radius: 4px; margin: 0 2px; }
+.exp-bullet-list { list-style: none; padding-left: 0 !important; margin: 0 0 var(--s-3) !important; display: grid; gap: var(--s-2); }
+.exp-bullet-list li { position: relative; padding-left: 1.4em; line-height: 1.5; margin: 0; }
+.exp-bullet-list li::before { content: "•"; position: absolute; left: 0.3em; color: var(--action); font-weight: bold; font-size: 1.2em; line-height: 1; }
+
+/* ---------------------------------------------------------------- External product link pills */
+.link-ext-pill { display: inline-flex; align-items: center; font-size: 12px; font-weight: 500; color: var(--action); text-decoration: none; padding: 2px 8px; border-radius: var(--r-btn); border: 1px solid var(--line-strong); background: #fff; white-space: nowrap; }
+.link-ext-pill:hover { background: var(--surface); border-color: var(--action); }
+.dataset-item { padding: var(--s-3) 0; }
+.dataset-title-row { display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); margin-bottom: 4px; }
+.evidence-source-row { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); padding: var(--s-3) 0; border-bottom: 1px solid var(--line); }
+.source-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.source-title-row { display: flex; align-items: center; gap: var(--s-2); }
+.source-ext-link { text-decoration: none !important; font-size: 12px; }
+.evidence-portal-row { display: flex; align-items: center; gap: var(--s-2); margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px dashed var(--line); flex-wrap: wrap; }
+.fs-note-loc { color: var(--muted); font-size: 13px; margin-top: 4px; line-height: 1.35; }
+.fs-note-alert { color: #991b1b; font-weight: 500; margin-top: 4px; }
+

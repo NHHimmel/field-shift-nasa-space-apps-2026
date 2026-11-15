@@ -7,6 +7,7 @@ import { useI18n } from '../i18n/I18nProvider'
 import type { StringKey } from '../i18n/strings'
 import { fmtInt, fmtPct } from '../lib/format'
 import { makeNames } from '../lib/names'
+import { NASA_PRODUCTS } from '../lib/nasaProducts'
 import { requestFromParams } from '../lib/query'
 import { useAsync } from '../lib/useAsync'
 
@@ -16,11 +17,11 @@ import { useAsync } from '../lib/useAsync'
 /** The irrigation answer as the plan's link writes it: 1, 0, or u (not sure). */
 type Irr = '1' | '0' | 'u'
 
-const DATASETS: { name: string; nameKey?: StringKey; desc: StringKey }[] = [
-  { name: 'NASA POWER', desc: 'about.ds.power' },
-  { name: 'NASA SMAP', desc: 'about.ds.smap' },
-  { name: 'NASA GRACE / GRACE-FO', desc: 'about.ds.grace' },
-  { name: 'NASA MODIS & ECOSTRESS', desc: 'about.ds.modis' },
+const DATASETS: { name: string; nameKey?: StringKey; desc: StringKey; url?: string }[] = [
+  { name: 'NASA POWER', desc: 'about.ds.power', url: NASA_PRODUCTS.power.url },
+  { name: 'NASA SMAP', desc: 'about.ds.smap', url: NASA_PRODUCTS.smap.url },
+  { name: 'NASA GRACE / GRACE-FO', desc: 'about.ds.grace', url: NASA_PRODUCTS.grace.url },
+  { name: 'NASA MODIS & ECOSTRESS', desc: 'about.ds.modis', url: NASA_PRODUCTS.modis.url },
   { name: '', nameKey: 'about.ds.statsName', desc: 'about.ds.stats' },
 ]
 
@@ -110,8 +111,13 @@ export default function Home() {
                 {meta.status === 'error' ? (
                   <p className="field__error">{t('res.error')} <button type="button" className="link" onClick={meta.retry}>{t('res.retry')}</button></p>
                 ) : null}
+                {selected ? (
+                  <p className="t-small fs-note fs-note-loc">
+                    📍 {lang === 'bn' ? selected.division_bn : selected.division_en} · {selected.latitude.toFixed(2)}° N, {selected.longitude.toFixed(2)}° E · {selected.agro_ecological_zone}
+                  </p>
+                ) : null}
                 {selected && selected.groundwater_pctl < 30 ? (
-                  <p className="t-small fs-note">{t('home.gwLow', { district: names.district(selected.key), pct: fmtPct(selected.groundwater_pctl, lang) })}</p>
+                  <p className="t-small fs-note fs-note-alert">{t('home.gwLow', { district: names.district(selected.key), pct: fmtPct(selected.groundwater_pctl, lang) })}</p>
                 ) : null}
               </div>
 
@@ -166,8 +172,21 @@ export default function Home() {
           </div>
           <ul className="rows span-6 start-7">
             {DATASETS.map((d) => (
-              <li key={d.desc}>
-                <span className="rows__name">{d.nameKey ? t(d.nameKey) : d.name}</span>
+              <li key={d.desc} className="dataset-item">
+                <div className="dataset-title-row">
+                  <span className="rows__name">{d.nameKey ? t(d.nameKey) : d.name}</span>
+                  {d.url ? (
+                    <a
+                      href={d.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="link-ext-pill"
+                      title={`${t('link.nasaProduct')}: ${d.name} (${t('link.external')})`}
+                    >
+                      NASA Product ↗
+                    </a>
+                  ) : null}
+                </div>
                 <p>{t(d.desc)}</p>
               </li>
             ))}

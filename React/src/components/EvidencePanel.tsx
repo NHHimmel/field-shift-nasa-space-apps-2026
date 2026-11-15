@@ -1,6 +1,7 @@
 import type { Recommendation } from '../api/types'
 import { useI18n } from '../i18n/I18nProvider'
 import type { StringKey } from '../i18n/strings'
+import { getNasaProduct, NASA_PRODUCTS } from '../lib/nasaProducts'
 
 const SOURCE_ROLE_KEYS: Record<string, StringKey> = {
   'NASA POWER': 'evidence.power',
@@ -34,7 +35,7 @@ export function EvidencePanel({ rec }: { rec: Recommendation }) {
         </div>
         <div className="evidence-item">
           <span className="muted small">{t('res.dataPeriod')}</span>
-          <strong>{rec.data_info.climate_years[0]}–{rec.data_info.climate_years[1]}</strong>
+          <strong>{rec.data_info.climate_years[0]}–{rec.data_info.climate_years[1]} (20-Year Baseline)</strong>
         </div>
         <div className="evidence-item">
           <span className="muted small">{t('res.latest')}</span>
@@ -43,7 +44,7 @@ export function EvidencePanel({ rec }: { rec: Recommendation }) {
         <div className="evidence-item evidence-wide">
           <span className="muted small">{t('res.location')}</span>
           <strong>
-            {rec.district.name_en} · {rec.district.latitude.toFixed(2)}°, {rec.district.longitude.toFixed(2)}°
+            {rec.district.name_en} · {rec.district.latitude.toFixed(2)}° N, {rec.district.longitude.toFixed(2)}° E
           </strong>
         </div>
       </div>
@@ -54,18 +55,53 @@ export function EvidencePanel({ rec }: { rec: Recommendation }) {
           <ul>
             {sources.map((source) => {
               const roleKey = SOURCE_ROLE_KEYS[source.name]
-              const statusLabel = source.status === 'active' ? t('res.active') : source.status === 'derived' ? t('res.derived') : t('res.fallback')
+              const statusLabel =
+                source.status === 'active'
+                  ? t('res.active')
+                  : source.status === 'derived'
+                    ? t('res.derived')
+                    : t('res.fallback')
+              const prod = getNasaProduct(source.name)
+
               return (
-                <li key={source.name}>
-                  <span>
-                    <strong>{source.name}</strong>
-                    <span className="muted">{roleKey ? t(roleKey) : source.role}</span>
-                  </span>
-                  <span className={`source-status ${source.status}`}>{statusLabel}</span>
+                <li key={source.name} className="evidence-source-row">
+                  <div className="source-info">
+                    <div className="source-title-row">
+                      <strong>{source.name}</strong>
+                      <span className={`source-status ${source.status}`}>{statusLabel}</span>
+                    </div>
+                    <span className="muted small">{roleKey ? t(roleKey) : source.role}</span>
+                  </div>
+
+                  {prod ? (
+                    <a
+                      href={prod.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn--secondary btn--sm source-ext-link"
+                      title={`${t('link.nasaProduct')}: ${prod.name} (${t('link.external')})`}
+                    >
+                      {prod.name} ↗
+                    </a>
+                  ) : null}
                 </li>
               )
             })}
           </ul>
+
+          <div className="evidence-portal-row">
+            <span className="muted small">
+              {lang === 'bn' ? 'নাসার অফিশিয়াল আর্থ সায়েন্স ডাটাবেজ:' : 'NASA official Earth Science data portal:'}
+            </span>
+            <a
+              href={NASA_PRODUCTS.earthdata.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link demo-link"
+            >
+              NASA Earthdata (EOSDIS) ↗
+            </a>
+          </div>
         </div>
       ) : null}
 
