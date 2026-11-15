@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { getMeta } from '../api/client'
 import { PRIORITIES, type Priority } from '../api/types'
 import { ChoiceGroup } from '../components/ChoiceGroup'
+import { HeroVisual } from '../components/HeroVisual'
 import { useI18n } from '../i18n/I18nProvider'
 import type { StringKey } from '../i18n/strings'
 import { fmtInt, fmtPct } from '../lib/format'
@@ -80,9 +81,14 @@ export default function Home() {
         <div className="wrap">
           <div className="hero-text grid hero__grid">
             <div className="hero__text span-5">
+              <div className="hero-badge-strip">
+                <span className="badge-pill">🛰️ NASA Data</span>
+                <span className="badge-pill">🌱 3 Seasons</span>
+                <span className="badge-pill">💧 Water Smart</span>
+              </div>
               <h1 id="hero-h">{t('hero.h1')}</h1>
               <p className="hero__lead">{t('hero.lead')}</p>
-              <p className="t-small fs-hero-note">{t('plan.next')}</p>
+              <HeroVisual />
             </div>
 
             <form id="plan" className="fs-form span-6 start-7" action="/result" method="get" onSubmit={onSubmit} noValidate>
@@ -152,27 +158,39 @@ export default function Home() {
 
       <section className="fs-block" id="how" aria-labelledby="how-h">
         <div className="wrap">
-          <h2 id="how-h">{t('menu.g2')}</h2>
-          <ol className="fs-steps-row">
-            {STEPS.map((k, i) => (
-              <li key={k}>
-                <span className="step-num">{fmtInt(i + 1, lang)}</span>
-                <p>{t(k)}</p>
-              </li>
-            ))}
-          </ol>
+          <div className="section-head-center">
+            <h2 id="how-h">🌱 {t('menu.g2')}</h2>
+            <p className="muted small">{lang === 'bn' ? '৪টি সহজ ধাপে আপনার জমির জন্য উপযুক্ত পরামর্শ' : 'Four straightforward steps from satellite observation to farmer guidance'}</p>
+          </div>
+          <div className="fs-steps-grid">
+            {STEPS.map((k, i) => {
+              const icons = ['📍', '🛰️', '🌾', '📊']
+              return (
+                <div key={k} className="fs-step-card">
+                  <div className="step-card-top">
+                    <span className="step-icon" aria-hidden>{icons[i]}</span>
+                    <span className="step-badge">0{fmtInt(i + 1, lang)}</span>
+                  </div>
+                  <p className="step-text">{t(k)}</p>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </section>
 
       <section className="fs-block" id="data" aria-labelledby="data-h">
         <div className="wrap grid grid--top">
           <div className="span-5 stack-4">
+            <div className="section-tag-row">
+              <span className="badge-pill">NASA Earthdata</span>
+            </div>
             <h2 id="data-h">{t('data.h2')}</h2>
             <p>{t('data.p')}</p>
           </div>
-          <ul className="rows span-6 start-7">
+          <div className="span-6 start-7 datasets-grid">
             {DATASETS.map((d) => (
-              <li key={d.desc} className="dataset-item">
+              <div key={d.desc} className="dataset-card">
                 <div className="dataset-title-row">
                   <span className="rows__name">{d.nameKey ? t(d.nameKey) : d.name}</span>
                   {d.url ? (
@@ -187,10 +205,10 @@ export default function Home() {
                     </a>
                   ) : null}
                 </div>
-                <p>{t(d.desc)}</p>
-              </li>
+                <p className="dataset-desc">{t(d.desc)}</p>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       </section>
 

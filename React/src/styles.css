@@ -374,3 +374,244 @@ html footer.closing.footer--statement > .wrap { height: auto; row-gap: var(--s-9
 .fs-note-loc { color: var(--muted); font-size: 13px; margin-top: 4px; line-height: 1.35; }
 .fs-note-alert { color: #991b1b; font-weight: 500; margin-top: 4px; }
 
+/* ---------------------------------------------------------------- Earth Observation & Living Canopy Background & Atmosphere */
+body {
+  background-color: var(--p-bg, #f5f8f6);
+  background-image: 
+    radial-gradient(ellipse 65% 45% at 10% 12%, rgba(21, 92, 69, 0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 45% at 92% 8%, rgba(7, 56, 63, 0.08) 0%, transparent 65%),
+    radial-gradient(circle 500px at 50% 90%, rgba(200, 90, 23, 0.035) 0%, transparent 70%),
+    url("data:image/svg+xml,%3Csvg width='140' height='140' viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 45 Q35 35 70 55 T140 45 M0 95 Q35 105 70 85 T140 95 M45 0 Q35 35 55 70 T45 140 M95 0 Q105 35 85 70 T95 140' stroke='%23155c45' stroke-width='0.6' fill='none' opacity='0.035'/%3E%3C/svg%3E");
+  background-attachment: fixed;
+}
+
+.fs-home-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-badge-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--r-btn);
+  background: color-mix(in oklab, var(--action) 10%, #fff);
+  border: 1px solid color-mix(in oklab, var(--action) 25%, transparent);
+  color: var(--action);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* ---------------------------------------------------------------- Hero Visual Telemetry Card */
+.hero-telemetry-card {
+  margin-top: var(--s-4);
+  border-radius: var(--r-lg);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 20px -4px rgba(7, 56, 63, 0.06);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-telemetry-card:hover {
+  box-shadow: 0 8px 30px -4px rgba(21, 92, 69, 0.12);
+}
+
+.hero-telemetry-canvas {
+  position: relative;
+  width: 100%;
+  background: linear-gradient(180deg, #f8fbf9 0%, #edf5f0 100%);
+  border-bottom: 1px solid var(--line);
+}
+
+.telemetry-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.satellite-beam {
+  animation: beam-sweep 6s infinite ease-in-out alternate;
+  transform-origin: 380px 25px;
+}
+
+@keyframes beam-sweep {
+  0% { transform: rotate(-4deg); opacity: 0.6; }
+  50% { opacity: 0.9; }
+  100% { transform: rotate(5deg); opacity: 0.6; }
+}
+
+.sat-signal {
+  animation: sat-pulse 2.5s infinite ease-out;
+}
+
+.sat-signal-outer {
+  animation: sat-pulse 2.5s infinite ease-out 0.8s;
+}
+
+@keyframes sat-pulse {
+  0% { r: 5px; opacity: 0.9; }
+  100% { r: 24px; opacity: 0; }
+}
+
+.target-pulse {
+  animation: target-ring 2s infinite ease-out;
+}
+
+@keyframes target-ring {
+  0% { r: 4px; opacity: 0.8; }
+  100% { r: 16px; opacity: 0; }
+}
+
+.hero-telemetry-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-2);
+  padding: var(--s-3);
+  background: #ffffff;
+}
+
+@media (max-width: 480px) {
+  .hero-telemetry-stats { grid-template-columns: 1fr; }
+}
+
+.telemetry-pill {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 10px;
+  background: var(--surface);
+  border-radius: var(--r-sm);
+  position: relative;
+  padding-left: 20px;
+}
+
+.pill-dot {
+  position: absolute;
+  left: 8px;
+  top: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.pill-dot.green { background: #155c45; }
+.pill-dot.teal { background: #07383f; }
+.pill-dot.orange { background: #c85a17; }
+
+.pill-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.pill-sub {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+/* ---------------------------------------------------------------- How it Works Steps Grid */
+.section-head-center {
+  margin-bottom: var(--s-6);
+}
+
+.section-head-center h2 {
+  margin: 0 0 4px !important;
+}
+
+.fs-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-4);
+}
+
+@media (max-width: 1023px) {
+  .fs-steps-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 639px) {
+  .fs-steps-grid { grid-template-columns: 1fr; }
+}
+
+.fs-step-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-5) var(--s-4);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: 0 2px 10px -2px rgba(7, 56, 63, 0.04);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.fs-step-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--action);
+}
+
+.step-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.step-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.step-badge {
+  font: 600 13px/1 var(--font-mono);
+  color: var(--muted);
+  background: var(--surface);
+  padding: 3px 8px;
+  border-radius: var(--r-btn);
+}
+
+.step-text {
+  margin: 0 !important;
+  font-size: var(--t-small);
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- Datasets Grid */
+.section-tag-row {
+  margin-bottom: var(--s-2);
+}
+
+.datasets-grid {
+  display: grid;
+  gap: var(--s-3);
+}
+
+.dataset-card {
+  padding: var(--s-4);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  transition: border-color 0.2s ease;
+}
+
+.dataset-card:hover {
+  border-color: var(--action);
+}
+
+.dataset-desc {
+  margin: 4px 0 0 !important;
+  font-size: var(--t-small);
+  color: var(--muted);
+}
+
+

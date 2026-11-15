@@ -64,3 +64,4 @@ def test_components_exist():
     assert (src / "NasaClimateCards.tsx").exists()
     assert (src / "Explanation.tsx").exists()
     assert (src / "EvidencePanel.tsx").exists()
+    assert (src / "HeroVisual.tsx").exists()
