@@ -20,7 +20,7 @@
 .nav.is-open .nav__actions .lang-toggle { display: inline-flex; }
 
 /* ---------------------------------------------------------------- the form (#plan) */
-.fs-form { display: grid; gap: var(--s-5); padding: var(--s-7); border-radius: var(--r-lg); background: #ffffff; border: 1px solid rgba(19, 98, 72, 0.14); box-shadow: 0 6px 24px -4px rgba(5, 51, 58, 0.06); }
+.fs-form { display: grid; gap: var(--s-5); padding: var(--s-7); border-radius: var(--r-lg); background: #ffffff; border: 1px solid rgba(19, 98, 72, 0.2); border-top: 4px solid #136248; box-shadow: 0 8px 30px -4px rgba(5, 51, 58, 0.08); }
 .fs-field { display: grid; gap: var(--s-2); }
 .fs-field label, .fs-form legend { font: 500 var(--t-small)/1.4 var(--font-text); color: var(--ink); padding: 0; }
 .fs-form fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: var(--s-2); }
@@ -381,18 +381,41 @@ html footer.closing.footer--statement > .wrap { height: auto; row-gap: var(--s-9
 
 /* ---------------------------------------------------------------- Earth Observation & Living Canopy Background & Atmosphere */
 body {
-  background-color: var(--p-bg, #f4f8f5);
+  background-color: #f4f8f5;
   background-image: 
-    radial-gradient(circle 800px at 15% 5%, rgba(19, 98, 72, 0.08) 0%, transparent 70%),
-    radial-gradient(circle 850px at 88% 8%, rgba(5, 51, 58, 0.09) 0%, transparent 65%),
-    radial-gradient(ellipse 70% 50% at 50% 92%, rgba(196, 85, 20, 0.04) 0%, transparent 70%),
-    url("data:image/svg+xml,%3Csvg width='240' height='240' viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 55,60 L 65,60 M 60,55 L 60,65' stroke='%23136248' stroke-width='0.8' opacity='0.16' /%3E%3Cpath d='M 175,180 L 185,180 M 180,175 L 180,185' stroke='%2305333a' stroke-width='0.8' opacity='0.16' /%3E%3Cpath d='M 0,38 Q 60,12 120,44 T 240,32' stroke='%23136248' stroke-width='0.7' fill='none' opacity='0.05' /%3E%3Cpath d='M 0,92 Q 70,120 140,84 T 240,108' stroke='%23136248' stroke-width='0.8' fill='none' opacity='0.06' /%3E%3Cpath d='M 0,158 Q 50,132 110,162 T 240,148' stroke='%2305333a' stroke-width='0.6' fill='none' opacity='0.045' /%3E%3Cpath d='M 0,214 Q 80,238 150,204 T 240,222' stroke='%23136248' stroke-width='0.7' fill='none' opacity='0.05' /%3E%3Ccircle cx='60' cy='180' r='1' fill='%23136248' opacity='0.12' /%3E%3Ccircle cx='180' cy='60' r='1' fill='%2305333a' opacity='0.12' /%3E%3C/svg%3E");
+    radial-gradient(circle 900px at 15% 5%, rgba(19, 98, 72, 0.16) 0%, transparent 70%),
+    radial-gradient(circle 950px at 88% 8%, rgba(5, 51, 58, 0.18) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 50% at 50% 95%, rgba(196, 85, 20, 0.10) 0%, transparent 70%),
+    url("data:image/svg+xml,%3Csvg width='240' height='240' viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0,120 L 240,120 M 120,0 L 120,240' stroke='%2305333a' stroke-width='0.7' stroke-dasharray='4,4' opacity='0.13' /%3E%3Cpath d='M 52,60 L 68,60 M 60,52 L 60,68' stroke='%23136248' stroke-width='1.2' opacity='0.32' /%3E%3Cpath d='M 172,180 L 188,180 M 180,172 L 180,188' stroke='%2305333a' stroke-width='1.2' opacity='0.32' /%3E%3Cpath d='M 0,36 Q 60,10 120,44 T 240,30' stroke='%23136248' stroke-width='1' fill='none' opacity='0.16' /%3E%3Cpath d='M 0,90 Q 70,120 140,82 T 240,106' stroke='%23136248' stroke-width='1.2' fill='none' opacity='0.20' /%3E%3Cpath d='M 0,156 Q 50,130 110,162 T 240,146' stroke='%2305333a' stroke-width='0.9' fill='none' opacity='0.14' /%3E%3Cpath d='M 0,212 Q 80,238 150,202 T 240,220' stroke='%23136248' stroke-width='1.1' fill='none' opacity='0.18' /%3E%3Ccircle cx='60' cy='180' r='2' fill='%23136248' opacity='0.24' /%3E%3Ccircle cx='180' cy='60' r='2' fill='%2305333a' opacity='0.24' /%3E%3C/svg%3E");
   background-attachment: fixed;
+}
+
+.nav {
+  background: rgba(244, 248, 245, 0.92) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(19, 98, 72, 0.16) !important;
+  box-shadow: 0 2px 14px rgba(5, 51, 58, 0.04);
 }
 
 .fs-home-hero {
   position: relative;
   overflow: hidden;
+}
+
+.fs-home-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle 550px at 10% 25%, rgba(19, 98, 72, 0.14) 0%, transparent 70%),
+    radial-gradient(circle 650px at 90% 20%, rgba(5, 51, 58, 0.15) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.fs-home-hero > .wrap {
+  position: relative;
+  z-index: 1;
 }
 
 .hero-badge-strip {
@@ -406,14 +429,15 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 11px;
+  padding: 4px 12px;
   border-radius: var(--r-btn);
-  background: #eaf3ed;
-  border: 1px solid rgba(19, 98, 72, 0.22);
+  background: #e4f2e9;
+  border: 1px solid rgba(19, 98, 72, 0.28);
   color: #136248;
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: -0.01em;
+  box-shadow: 0 1px 4px rgba(19, 98, 72, 0.08);
 }
 
 /* ---------------------------------------------------------------- Hero Visual Telemetry Card */
@@ -421,22 +445,22 @@ body {
   margin-top: var(--s-4);
   border-radius: var(--r-lg);
   background: #ffffff;
-  border: 1px solid rgba(19, 98, 72, 0.16);
-  box-shadow: 0 6px 24px -4px rgba(5, 51, 58, 0.08);
+  border: 1px solid rgba(19, 98, 72, 0.22);
+  box-shadow: 0 8px 30px -4px rgba(5, 51, 58, 0.10);
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .hero-telemetry-card:hover {
-  box-shadow: 0 10px 32px -4px rgba(19, 98, 72, 0.15);
-  transform: translateY(-1px);
+  box-shadow: 0 12px 36px -4px rgba(19, 98, 72, 0.20);
+  transform: translateY(-2px);
 }
 
 .hero-telemetry-canvas {
   position: relative;
   width: 100%;
-  background: linear-gradient(180deg, #f7fbf8 0%, #ebf5ee 100%);
-  border-bottom: 1px solid rgba(19, 98, 72, 0.12);
+  background: linear-gradient(180deg, #f4fbf6 0%, #e5f3eb 100%);
+  border-bottom: 1px solid rgba(19, 98, 72, 0.16);
 }
 
 .telemetry-svg {
