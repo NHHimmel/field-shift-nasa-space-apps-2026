@@ -1,36 +1,41 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { getMeta } from '../api/client'
-import { PRIORITIES, SEASONS, type Priority, type SeasonKey, type SoilLevel } from '../api/types'
+import { PRIORITIES, type Priority } from '../api/types'
 import { ChoiceGroup } from '../components/ChoiceGroup'
 import { useI18n } from '../i18n/I18nProvider'
-import { fmtPct } from '../lib/format'
+import type { StringKey } from '../i18n/strings'
+import { fmtInt, fmtPct } from '../lib/format'
 import { makeNames } from '../lib/names'
-import { paramsFromRequest, requestFromParams } from '../lib/query'
+import { requestFromParams } from '../lib/query'
 import { useAsync } from '../lib/useAsync'
 
-type Irr = 'yes' | 'no' | 'unknown'
-const PRIORITY_ICONS: Record<Priority, string> = {
-  balanced: '⚖️',
-  water_conservation: '💧',
-  soil_health: '🌱',
-  high_value_vegetable: '🥬',
-}
+/* A plain home page: the headline beside the three-question form, then how it works, the NASA data
+   and the questions. The optional answers (soil, current crops, crops to avoid) are on the plan page. */
+
+/** The irrigation answer as the plan's link writes it: 1, 0, or u (not sure). */
+type Irr = '1' | '0' | 'u'
+
+const DATASETS: { name: string; nameKey?: StringKey; desc: StringKey }[] = [
+  { name: 'NASA POWER', desc: 'about.ds.power' },
+  { name: 'NASA SMAP', desc: 'about.ds.smap' },
+  { name: 'NASA GRACE / GRACE-FO', desc: 'about.ds.grace' },
+  { name: 'NASA MODIS & ECOSTRESS', desc: 'about.ds.modis' },
+  { name: '', nameKey: 'about.ds.statsName', desc: 'about.ds.stats' },
+]
+
+const STEPS: StringKey[] = ['about.step1', 'about.step2', 'about.step3', 'about.step4']
 
 export default function Home() {
   const { t, lang } = useI18n()
-  const navigate = useNavigate()
   const [params] = useSearchParams()
   const initial = useMemo(() => requestFromParams(params), [params])
   const meta = useAsync(() => getMeta(), [])
   const names = makeNames(meta.data, lang)
 
   const [district, setDistrict] = useState(initial?.district ?? '')
-  const [irr, setIrr] = useState<Irr>(initial?.irrigation === true ? 'yes' : initial?.irrigation === false ? 'no' : 'unknown')
+  const [irr, setIrr] = useState<Irr>(initial?.irrigation === true ? '1' : initial?.irrigation === false ? '0' : 'u')
   const [priority, setPriority] = useState<Priority>(initial?.priority ?? 'balanced')
-  const [soil, setSoil] = useState<SoilLevel>(initial?.soil_fertility ?? 'unknown')
-  const [current, setCurrent] = useState<Record<SeasonKey, string> | null>(initial?.current_crops ?? null)
-  const [excluded, setExcluded] = useState<string[]>(initial?.excluded_crops ?? [])
   const [showError, setShowError] = useState(false)
 
   const groups = useMemo(() => {
@@ -47,201 +52,145 @@ export default function Home() {
   }, [meta.data, lang])
 
   const selected = district ? names.districtInfo(district) : undefined
-  const avoidable = useMemo(() => {
-    const all = new Set<string>()
-    for (const s of SEASONS) for (const c of meta.data?.season_crops[s] ?? []) if (c !== 'Fallow') all.add(c)
-    return [...all]
-  }, [meta.data])
+  const rate = meta.data?.units.usd_to_bdt
 
+  // The form is a real GET to the plan's page (/result?d=..&irr=..&p=..); only a missing district stops it.
   function onSubmit(e: FormEvent) {
-    e.preventDefault()
     if (!district) {
+      e.preventDefault()
       setShowError(true)
-      return
+      document.getElementById('f-district')?.focus()
     }
-    const p = paramsFromRequest({
-      district,
-      irrigation: irr === 'yes' ? true : irr === 'no' ? false : null,
-      priority,
-      soil_fertility: soil,
-      current_crops: current,
-      excluded_crops: excluded,
-    })
-    navigate(`/result?${p.toString()}`)
   }
 
-  const currentValue = (s: SeasonKey) => current?.[s] ?? meta.data?.default_current_crops[s] ?? ''
-
+  // Fills the form with a ready example (Rajshahi) so a first-time visitor can try it in one click.
   function loadDemo() {
     const demo = meta.data?.districts.find((d) => d.key.toLowerCase() === 'rajshahi') ?? meta.data?.districts[0]
     if (!demo) return
     setDistrict(demo.key)
-    setIrr(demo.default_irrigation ? 'yes' : 'no')
+    setIrr(demo.default_irrigation ? '1' : '0')
     setPriority('balanced')
-    setSoil('medium')
-    setCurrent(null)
-    setExcluded([])
     setShowError(false)
   }
 
-  function loadDemo() {
-    const demo = meta.data?.districts.find((d) => d.key.toLowerCase() === 'rajshahi') ?? meta.data?.districts[0]
-    if (!demo) return
-    setDistrict(demo.key)
-    setIrr(demo.default_irrigation ? 'yes' : 'no')
-    setPriority('balanced')
-    setSoil('medium')
-    setCurrent(null)
-    setExcluded([])
-    setShowError(false)
-  }
-
-<<<<<<< HEAD
-  function loadDemo() {
-    const demo = meta.data?.districts.find((d) => d.key.toLowerCase() === 'rajshahi') ?? meta.data?.districts[0]
-    if (!demo) return
-    setDistrict(demo.key)
-    setIrr(demo.default_irrigation ? 'yes' : 'no')
-    setPriority('balanced')
-    setSoil('medium')
-    setCurrent(null)
-    setExcluded([])
-    setShowError(false)
-  }
-
-=======
->>>>>>> parent of 630a375 (clean ui)
   return (
-    <div className="home">
-      <section className="hero">
-        <h1>{t('home.title')}</h1>
-        <p>{t('home.subtitle')}</p>
+    <>
+      <section className="hero hero--split fs-home-hero" aria-labelledby="hero-h">
+        <div className="wrap">
+          <div className="hero-text grid hero__grid">
+            <div className="hero__text span-5">
+              <h1 id="hero-h">{t('hero.h1')}</h1>
+              <p className="hero__lead">{t('hero.lead')}</p>
+              <p className="t-small fs-hero-note">{t('plan.next')}</p>
+            </div>
+
+            <form id="plan" className="fs-form span-6 start-7" action="/result" method="get" onSubmit={onSubmit} noValidate>
+              {lang === 'en' ? <input type="hidden" name="lang" value="en" /> : null}
+              <div className="fs-field">
+                <label htmlFor="f-district">{t('home.q1')}</label>
+                <select
+                  id="f-district"
+                  name="d"
+                  value={district}
+                  onChange={(e) => { setDistrict(e.target.value); setShowError(false) }}
+                  disabled={!meta.data}
+                  required
+                  aria-invalid={showError && !district ? true : undefined}
+                  aria-describedby="f-district-err"
+                >
+                  <option value="">{meta.data ? t('home.q1.placeholder') : t('home.loadingMeta')}</option>
+                  {groups.map((g) => (
+                    <optgroup key={g.label} label={g.label}>
+                      {g.items.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+                <p className="field__error" id="f-district-err" hidden={!(showError && !district)}>{t('home.needDistrict')}</p>
+                {meta.data ? <button type="button" className="link demo-link" onClick={loadDemo}>{t('home.demo')}</button> : null}
+                {meta.status === 'error' ? (
+                  <p className="field__error">{t('res.error')} <button type="button" className="link" onClick={meta.retry}>{t('res.retry')}</button></p>
+                ) : null}
+                {selected && selected.groundwater_pctl < 30 ? (
+                  <p className="t-small fs-note">{t('home.gwLow', { district: names.district(selected.key), pct: fmtPct(selected.groundwater_pctl, lang) })}</p>
+                ) : null}
+              </div>
+
+              <ChoiceGroup<Irr>
+                name="irr"
+                legend={t('home.q2')}
+                value={irr}
+                onChange={setIrr}
+                choices={[
+                  { value: '1', label: t('irr.yes') },
+                  { value: '0', label: t('irr.no') },
+                  { value: 'u', label: t('irr.unknown') },
+                ]}
+              />
+
+              <ChoiceGroup<Priority>
+                name="p"
+                variant="cards"
+                legend={t('home.q3')}
+                value={priority}
+                onChange={setPriority}
+                choices={PRIORITIES.map((p) => ({ value: p, label: t(`strategy.${p}`), desc: t(`strategy.${p}.desc`) }))}
+              />
+
+              <div className="btn-row">
+                <button className="btn btn--primary" type="submit">{t('cta.main')}</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </section>
 
-      <form className="card form" onSubmit={onSubmit} noValidate>
-        <label className="field">
-          <span className="field-label"><span className="step">1</span> {t('home.q1')}</span>
-          <select
-            value={district}
-            onChange={(e) => { setDistrict(e.target.value); setShowError(false) }}
-            disabled={!meta.data}
-            aria-invalid={showError && !district}
-          >
-            <option value="">{meta.data ? t('home.q1.placeholder') : t('home.loadingMeta')}</option>
-            {groups.map((g) => (
-              <optgroup key={g.label} label={g.label}>
-                {g.items.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
-              </optgroup>
+      <section className="fs-block" id="how" aria-labelledby="how-h">
+        <div className="wrap">
+          <h2 id="how-h">{t('menu.g2')}</h2>
+          <ol className="fs-steps-row">
+            {STEPS.map((k, i) => (
+              <li key={k}>
+                <span className="step-num">{fmtInt(i + 1, lang)}</span>
+                <p>{t(k)}</p>
+              </li>
             ))}
-          </select>
-          {showError && !district ? <span className="error small">{t('home.needDistrict')}</span> : null}
-          {meta.data ? <button type="button" className="link demo-link" onClick={loadDemo}>▶ {t('home.demo')}</button> : null}
-          {meta.status === 'error' ? (
-            <span className="error small">{t('res.error')} <button type="button" className="link" onClick={meta.retry}>{t('res.retry')}</button></span>
-          ) : null}
-        </label>
+          </ol>
+        </div>
+      </section>
 
-        {selected && selected.groundwater_pctl < 30 ? (
-          <p className="note warn">
-            💧 {t('home.gwLow', { district: names.district(selected.key), pct: fmtPct(selected.groundwater_pctl, lang) })}
-          </p>
-        ) : null}
-
-        <ChoiceGroup<Irr>
-          name="irrigation"
-          legend={<><span className="step">2</span> {t('home.q2')}</>}
-          value={irr}
-          onChange={setIrr}
-          choices={[
-            { value: 'yes', label: t('irr.yes'), icon: '🚿' },
-            { value: 'no', label: t('irr.no'), icon: '🚫' },
-            { value: 'unknown', label: t('irr.unknown'), icon: '🤔' },
-          ]}
-        />
-
-        <ChoiceGroup<Priority>
-          name="priority"
-          variant="cards"
-          legend={<><span className="step">3</span> {t('home.q3')}</>}
-          value={priority}
-          onChange={setPriority}
-          choices={PRIORITIES.map((p) => ({
-            value: p,
-            label: t(`strategy.${p}`),
-            desc: t(`strategy.${p}.desc`),
-            icon: PRIORITY_ICONS[p],
-          }))}
-        />
-
-        <details className="more" open={Boolean(initial?.current_crops || initial?.excluded_crops.length || (initial && initial.soil_fertility !== 'unknown'))}>
-          <summary>{t('home.more')}</summary>
-
-          <ChoiceGroup<SoilLevel>
-            name="soil"
-            legend={t('home.soil')}
-            value={soil}
-            onChange={setSoil}
-            choices={(['low', 'medium', 'high', 'unknown'] as SoilLevel[]).map((s) => ({ value: s, label: t(`soil.${s}`) }))}
-          />
-
-          <fieldset className="current">
-            <legend>{t('home.current')}</legend>
-            {SEASONS.map((s) => (
-              <label key={s} className="field inline">
-                <span>{t(`season.${s}`)} <small className="muted">{t(`season.${s}.sub`)}</small></span>
-                <select
-                  value={currentValue(s)}
-                  onChange={(e) => {
-                    const base = meta.data!.default_current_crops
-                    setCurrent({ ...(current ?? base), [s]: e.target.value })
-                  }}
-                  disabled={!meta.data}
-                >
-                  {(meta.data?.season_crops[s] ?? []).map((c) => <option key={c} value={c}>{names.crop(c)}</option>)}
-                </select>
-              </label>
+      <section className="fs-block" id="data" aria-labelledby="data-h">
+        <div className="wrap grid grid--top">
+          <div className="span-5 stack-4">
+            <h2 id="data-h">{t('data.h2')}</h2>
+            <p>{t('data.p')}</p>
+          </div>
+          <ul className="rows span-6 start-7">
+            {DATASETS.map((d) => (
+              <li key={d.desc}>
+                <span className="rows__name">{d.nameKey ? t(d.nameKey) : d.name}</span>
+                <p>{t(d.desc)}</p>
+              </li>
             ))}
-<<<<<<< HEAD
-          </select>
-          {showError && !district ? <span className="error small">{t('home.needDistrict')}</span> : null}
-          {meta.data ? <button type="button" className="link demo-link" onClick={loadDemo}>▶ {t('home.demo')}</button> : null}
-          {meta.status === 'error' ? (
-            <span className="error small">{t('res.error')} <button type="button" className="link" onClick={meta.retry}>{t('res.retry')}</button></span>
-          ) : null}
-        </label>
-=======
-          </fieldset>
->>>>>>> parent of 630a375 (clean ui)
+          </ul>
+        </div>
+      </section>
 
-          <fieldset>
-            <legend>{t('home.avoid')}</legend>
-            <div className="chips">
-              {avoidable.map((c) => {
-                const on = excluded.includes(c)
-                return (
-                  <button
-                    type="button"
-                    key={c}
-                    className={`chip ${on ? 'on' : ''}`}
-                    aria-pressed={on}
-                    onClick={() => setExcluded(on ? excluded.filter((x) => x !== c) : [...excluded, c])}
-                  >
-                    {on ? '✕ ' : ''}{names.crop(c)}
-                  </button>
-                )
-              })}
-            </div>
-          </fieldset>
-        </details>
-
-        <button type="submit" className="primary big">{t('home.submit')} →</button>
-      </form>
-
-      <ol className="how">
-        <li><span aria-hidden>📍</span>{t('home.how1')}</li>
-        <li><span aria-hidden>🛰️</span>{t('home.how2')}</li>
-        <li><span aria-hidden>🌾</span>{t('home.how3')}</li>
-      </ol>
-    </div>
+      <section className="fs-block" id="faq" aria-labelledby="faq-h">
+        <div className="wrap grid grid--top">
+          <div className="span-5 stack-4">
+            <h2 id="faq-h">{t('faq.h2')}</h2>
+            <p>{t('faq.p')}</p>
+          </div>
+          <div className="faq span-6 start-7">
+            {([1, 2, 4, 5, 6] as const).map((i) => (
+              <div className="faq__item" key={i}>
+                <h3>{t(`faq.q${i}` as StringKey)}</h3>
+                <p>{t(`faq.a${i}` as StringKey, { rate: rate ? fmtInt(rate, lang) : '—' })}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
   )
 }

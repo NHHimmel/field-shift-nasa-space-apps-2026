@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { getMeta, getRecommendation } from '../api/client'
 import { PRIORITIES, type StrategyKey } from '../api/types'
+import { EvidencePanel } from '../components/EvidencePanel'
 import { Explanation } from '../components/Explanation'
-import { EvidencePanel } from '../components/EvidencePanel'
-import { EvidencePanel } from '../components/EvidencePanel'
 import { CompareList, CropCalendar, RangeBar, ScenarioPanel, StressChart } from '../components/Insights'
 import { SeasonTiles, StatTiles } from '../components/PlanSummary'
+import { RefineForm } from '../components/RefineForm'
 import { useI18n } from '../i18n/I18nProvider'
 import { makeNames } from '../lib/names'
 import { requestFromParams } from '../lib/query'
@@ -36,34 +36,44 @@ export default function Results() {
 
   if (!req) {
     return (
-      <div className="card center">
-        <p>{t('res.missing')}</p>
-        <Link className="primary" to="/">{t('res.start')}</Link>
-      </div>
+      <div className="page"><div className="wrap">
+        <div className="card center">
+          <p>{t('res.missing')}</p>
+          <a className="btn btn--primary" href="/#plan">{t('cta.main')}</a>
+        </div>
+      </div></div>
     )
   }
 
   const data = rec.data
   if (!data) {
-    return rec.status === 'error' ? (
-      <div className="card center">
-        <p className="error">{t('res.error')}</p>
-        {rec.error instanceof Error && rec.error.message ? <p className="muted small">{rec.error.message}</p> : null}
-        <button className="primary" onClick={rec.retry}>{t('res.retry')}</button>
-      </div>
-    ) : (
-      <div className="card center" aria-busy="true">
-        <div className="spinner" aria-hidden />
-        <p>{t('res.loading')}</p>
-        {slow ? <p className="muted small">{t('res.loadingSlow')}</p> : null}
-      </div>
+    return (
+      <div className="page"><div className="wrap">
+        {rec.status === 'error' ? (
+          <div className="card center">
+            <p className="error">{t('res.error')}</p>
+            {rec.error instanceof Error && rec.error.message ? <p className="muted t-small">{rec.error.message}</p> : null}
+            <button className="btn btn--primary" onClick={rec.retry}>{t('res.retry')}</button>
+          </div>
+        ) : (
+          <div className="card center" aria-busy="true">
+            <div className="spinner" aria-hidden />
+            <p>{t('res.loading')}</p>
+            {slow ? <p className="muted t-small">{t('res.loadingSlow')}</p> : null}
+          </div>
+        )}
+      </div></div>
     )
   }
 
   const requestedStrategy: StrategyKey = selected ?? data.recommended_strategy
   const card = data.strategies.find((s) => s.key === requestedStrategy) ?? data.strategies[0]
   if (!card) {
-    return <div className="card center"><p className="error">{t('res.error')}</p></div>
+    return (
+      <div className="page"><div className="wrap">
+        <div className="card center"><p className="error">{t('res.error')}</p></div>
+      </div></div>
+    )
   }
   const strategy = card.key
   const tabs = [data.recommended_strategy, ...PRIORITIES.filter((p) => p !== data.recommended_strategy)]
@@ -84,17 +94,18 @@ export default function Results() {
   }
 
   return (
-    <div className="results">
+    <div className="page page--app"><div className="wrap results">
       <div className="toolbar no-print">
-        <Link to={`/?${query}`} className="link">← {t('res.change')}</Link>
+        <a href={`/?${query}#plan`} className="link">← {t('res.change')}</a>
         <span className="toolbar-actions">
-          <button className="ghost" onClick={share}>🔗 {copied ? t('res.copied') : t('res.share')}</button>
-          <button className="ghost" onClick={() => window.print()}>🖨️ {t('res.print')}</button>
+          <button className="btn btn--secondary btn--sm" onClick={share}>{copied ? t('res.copied') : t('res.share')}</button>
+          <button className="btn btn--secondary btn--sm" onClick={() => window.print()}>{t('res.print')}</button>
         </span>
       </div>
+      <h1 className="results__title">{t('res.planTitle')} · {names.district(data.district.key)}</h1>
 
       <div className="summary-chips">
-        <span className="chip static">📍 {names.district(data.district.key)}</span>
+        <span className="chip static">{lang === 'bn' ? data.district.division_bn : data.district.division_en}</span>
         <span className="chip static">
           {data.inputs.irrigation ? t('res.irrYes') : t('res.irrNo')}
           {data.inputs.irrigation_was_default ? t('res.irrDefault') : ''}
@@ -102,7 +113,7 @@ export default function Results() {
         <span className="chip static">{t('res.soil', { level: t(`soil.${req.soil_fertility}`) })}</span>
       </div>
 
-      <div className="tabs no-print" role="tablist">
+      <div className="fs-tabs no-print" role="tablist">
         {tabs.map((k) => (
           <button key={k} role="tab" aria-selected={k === strategy} className={k === strategy ? 'on' : ''} onClick={() => setSelected(k)}>
             {t(`strategy.${k}`)}
@@ -123,7 +134,9 @@ export default function Results() {
       <CropCalendar card={card} names={names} />
       <ScenarioPanel rec={data} strategy={strategy} names={names} />
       <StressChart rec={data} />
+      <RefineForm key={query} req={req} meta={meta.data} names={names} />
       <CompareList rec={data} selected={strategy} onSelect={(k) => { setSelected(k); window.scrollTo({ top: 0, behavior: 'smooth' }) }} names={names} />
-    </div>
+      <p className="advisory">{t('advisory')}</p>
+    </div></div>
   )
 }

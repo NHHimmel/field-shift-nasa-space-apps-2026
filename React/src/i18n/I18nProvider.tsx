@@ -13,6 +13,9 @@ interface I18n {
 const Ctx = createContext<I18n | null>(null)
 
 function initialLang(): Lang {
+  // ?lang=en or ?lang=bn in the link wins, so a page can be shared (or checked) in either language
+  const asked = new URLSearchParams(window.location.search).get('lang')
+  if (asked === 'bn' || asked === 'en') return asked
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY)
     if (saved === 'bn' || saved === 'en') return saved

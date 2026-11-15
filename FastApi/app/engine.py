@@ -165,13 +165,8 @@ def _policy_model() -> Optional[Any]:
             _policy_state["note"] = f"checkpoint not found: {path.name}"
             return None
         try:
-            import torch
-
-            model = rl.CropRotationActorCritic(
-                state_dim=17, daily_feature_dim=12, hidden_dim=64, action_dim=rl.NUM_CROPS
-            )
-            model.load_state_dict(torch.load(path, map_location="cpu", weights_only=True))
-            model.eval()
+            # Handles the {"state_dict": ..., "model_config": ...} format the training script saves.
+            model = rl.load_trained_policy(path, device="cpu")
             _policy_state["model"] = model
             _policy_state["note"] = "trained checkpoint loaded"
         except Exception as exc:  # e.g. checkpoint trained with a different crop catalog size

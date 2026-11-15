@@ -1,70 +1,124 @@
-import { Link, NavLink } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useI18n } from '../i18n/I18nProvider'
-<<<<<<< HEAD
+
+/* Links that lead to the home page's sections are plain anchors: on the home page they jump in place,
+   elsewhere they load the home page, where the design kit starts once (lib/kit.ts). */
+function useHomeHref() {
+  const { pathname } = useLocation()
+  return (id: string) => (pathname === '/' ? `#${id}` : `/#${id}`)
+}
+
+/** The example plan is a real plan page: Rajshahi with the usual answers. */
+const EXAMPLE = '/result?d=Rajshahi&p=balanced'
+
+const Arrow = () => (
+  <svg className="m-arrow" viewBox="0 0 12 12" aria-hidden="true">
+    <path className="m-arrow__stem" d="M1 6h8" />
+    <path className="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5" />
+  </svg>
+)
+export { Arrow }
 
 type ApiStatus = 'loading' | 'ok' | 'error'
 
+/** Whether the FastAPI backend answered /api/health: a coloured dot only; the words are in its tooltip. */
 function ApiStatusPill({ status }: { status: ApiStatus }) {
   const { t } = useI18n()
   const label = status === 'ok' ? t('status.connected') : status === 'error' ? t('status.unavailable') : t('status.checking')
-  return <span className={`api-status ${status}`} title={label}><span aria-hidden>●</span> {label}</span>
+  return <span className={`api-status ${status}`} title={label} role="img" aria-label={label}><span aria-hidden="true">●</span></span>
 }
 
-export function Header({ apiStatus = 'loading' }: { apiStatus?: ApiStatus }) {
-=======
-import { fmtInt } from '../lib/format'
-
-type ApiStatus = 'loading' | 'ok' | 'error'
-
-function ApiStatusPill({ status }: { status: ApiStatus }) {
-  const { t } = useI18n()
-  const label = status === 'ok' ? t('status.connected') : status === 'error' ? t('status.unavailable') : t('status.checking')
-  return <span className={`api-status ${status}`} title={label}><span aria-hidden>●</span> {label}</span>
-}
-
-export function Header({ apiStatus = 'loading' }: { apiStatus?: ApiStatus }) {
+function LangToggle() {
   const { t, lang, setLang } = useI18n()
   return (
-    <header className="header">
-      <div className="container header-inner">
-        <Link to="/" className="brand">
-          <img src="/favicon.svg" alt="" width={36} height={36} />
-          <span>
-            <strong>{t('app.name')}</strong>
-            <small>{t('app.tagline')}</small>
-          </span>
-        </Link>
-        <span className="header-actions">
+    <div className="lang-toggle" role="group" aria-label={t('lang.label')}>
+      <button type="button" aria-pressed={lang === 'bn'} onClick={() => setLang('bn')} lang="bn">বাংলা</button>
+      <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')} lang="en">English</button>
+    </div>
+  )
+}
+
+function Logo({ href }: { href: string }) {
+  const { t } = useI18n()
+  return (
+    <a className="nav__logo" href={href}>
+      <span className="mark mark--initial" aria-hidden="true">F</span>
+      {t('app.name')}
+    </a>
+  )
+}
+
+export function Header({ apiStatus = 'loading' }: { apiStatus?: ApiStatus }) {
+  const { t } = useI18n()
+  const { pathname } = useLocation()
+  const href = useHomeHref()
+  return (
+    <header className="nav">
+      <div className="wrap nav__bar">
+        <a className="skip-link" href="#top">{t('nav.skip')}</a>
+        <Logo href={pathname === '/' ? '#top' : '/'} />
+        <nav className="nav__links" aria-label={t('nav.main')}>
+          <div className="nav__item"><a className="nav__link" href={href('plan')}>{t('nav.plan')}</a></div>
+          <div className="nav__item"><a className="nav__link" href={href('data')}>{t('nav.data')}</a></div>
+          <div className="nav__item"><a className="nav__link" href={href('faq')}>{t('nav.faq')}</a></div>
+          <div className="nav__item">
+            <a className="nav__link" href="/about" aria-current={pathname === '/about' ? 'page' : undefined}>{t('nav.about')}</a>
+          </div>
+        </nav>
+        <div className="nav__actions">
           <ApiStatusPill status={apiStatus} />
-          <span className="lang-toggle" role="group" aria-label={t('lang.label')}>
-            <button className={lang === 'bn' ? 'on' : ''} onClick={() => setLang('bn')} lang="bn">
-              বাংলা
-            </button>
-            <button className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')} lang="en">
-              English
-            </button>
-          </span>
-        </span>
+          <LangToggle />
+          <a className="btn btn--primary" href={href('plan')}>{t('cta.main')}</a>
+        </div>
+        <button className="nav__toggle" type="button" aria-expanded="false" aria-label={t('nav.menu')}>
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+        </button>
       </div>
-      <nav className="container nav">
-        <NavLink to="/" end>
-          {t('nav.home')}
-        </NavLink>
-        <NavLink to="/about">{t('nav.about')}</NavLink>
-      </nav>
     </header>
   )
 }
 
-export function Footer({ rate, apiStatus = 'loading' }: { rate?: number; apiStatus?: ApiStatus }) {
-  const { t, lang } = useI18n()
+export function Footer({ apiStatus = 'loading' }: { apiStatus?: ApiStatus }) {
+  const { t } = useI18n()
+  const href = useHomeHref()
+  const { pathname } = useLocation()
   return (
-    <footer className="footer">
-      <div className="container">
-        <p className="advisory">⚠️ {t('advisory')}</p>
-        {rate ? <p className="muted small">{t('footer.units', { rate: fmtInt(rate, lang) })}</p> : null}
-        <p className="muted small"><ApiStatusPill status={apiStatus} /></p>
-        <p className="muted small">{t('footer.made')}</p>
+    <footer className="footer closing footer--statement" id="contact" aria-labelledby="close-h">
+      <div className="wrap">
+        <div className="closing__cta close--type">
+          <div className="section-head">
+            <h2 id="close-h">{t('close.h2')}</h2>
+            <p className="t-small muted">{t('close.p')}</p>
+          </div>
+          <a className="btn btn--primary btn--xl btn--wide" href={href('plan')}>{t('cta.main')}<Arrow /></a>
+        </div>
+        <div className="closing__links">
+          <div className="grid">
+            <div className="span-4 stack-4">
+              <Logo href={pathname === '/' ? '#top' : '/'} />
+              <p className="footer__lede">{t('footer.lede')}</p>
+            </div>
+            <div className="span-3 start-7 footer__col">
+              <h3>{t('nav.plan')}</h3>
+              <ul>
+                <li><a href={EXAMPLE}>{t('menu.example')}</a></li>
+                <li><a href={href('how')}>{t('menu.g2')}</a></li>
+              </ul>
+            </div>
+            <div className="span-3 start-10 footer__col">
+              <h3>{t('footer.site')}</h3>
+              <ul>
+                <li><a href={href('data')}>{t('menu.data')}</a></li>
+                <li><a href={href('faq')}>{t('nav.faq')}</a></li>
+                <li><a href="/about">{t('nav.about')}</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="footer__legal">
+            <span>© 2026 {t('app.name')} · {t('footer.made')}</span>
+            <ApiStatusPill status={apiStatus} />
+          </div>
+        </div>
       </div>
     </footer>
   )
