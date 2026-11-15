@@ -1,21 +1,39 @@
-import type { StrategyCard } from '../api/types'
+import type { SeasonKey, StrategyCard } from '../api/types'
 import { useI18n } from '../i18n/I18nProvider'
 import { fmtKg, fmtMm, fmtTaka } from '../lib/format'
 import { cropIcon, type Names } from '../lib/names'
 
-export function SeasonTiles({ card, names }: { card: StrategyCard; names: Names }) {
+export function SeasonTiles({
+  card,
+  names,
+  plantedSeasons,
+}: {
+  card: StrategyCard
+  names: Names
+  plantedSeasons?: Partial<Record<SeasonKey, string>>
+}) {
   const { t } = useI18n()
+  const hasPlanted = plantedSeasons && Object.keys(plantedSeasons).length > 0
+
   return (
     <ol className="season-tiles">
-      {card.seasons.map((s, i) => (
-        <li key={s.season} className={`season-tile season-${s.season} ${s.crop === 'Fallow' ? 'fallow' : ''}`}>
-          <span className="season-name">{t(`season.${s.season}`)}</span>
-          <span className="season-sub">{t(`season.${s.season}.sub`)}</span>
-          <span className="crop-icon" aria-hidden>{cropIcon(s.crop, s.category)}</span>
-          <span className="crop-name">{names.crop(s.crop)}</span>
-          {i < card.seasons.length - 1 ? <span className="arrow" aria-hidden>→</span> : null}
-        </li>
-      ))}
+      {card.seasons.map((s, i) => {
+        const isPlanted = Boolean(plantedSeasons?.[s.season])
+        return (
+          <li key={s.season} className={`season-tile season-${s.season} ${s.crop === 'Fallow' ? 'fallow' : ''}`}>
+            {hasPlanted ? (
+              <span className={`season-status-badge ${isPlanted ? 'planted' : 'rec'}`}>
+                {isPlanted ? `🔒 ${t('plan.planted')}` : `✨ ${t('plan.recommended')}`}
+              </span>
+            ) : null}
+            <span className="season-name">{t(`season.${s.season}`)}</span>
+            <span className="season-sub">{t(`season.${s.season}.sub`)}</span>
+            <span className="crop-icon" aria-hidden>{cropIcon(s.crop, s.category)}</span>
+            <span className="crop-name">{names.crop(s.crop)}</span>
+            {i < card.seasons.length - 1 ? <span className="arrow" aria-hidden>→</span> : null}
+          </li>
+        )
+      })}
     </ol>
   )
 }

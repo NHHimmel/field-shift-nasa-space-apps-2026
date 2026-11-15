@@ -65,3 +65,27 @@ def test_components_exist():
     assert (src / "Explanation.tsx").exists()
     assert (src / "EvidencePanel.tsx").exists()
     assert (src / "HeroVisual.tsx").exists()
+
+
+def test_planted_crop_conditioning():
+    import sys
+    sys.path.insert(0, str(ROOT / "FastApi"))
+    from app import engine
+
+    # Test 1: When Rabi is planted as Mustard and other seasons are auto
+    res = engine.recommend("Rajshahi", True, "medium", ("Mustard", "auto", "auto"), [])
+    assert res["inputs"]["planted_seasons"] == {"rabi": "Mustard"}
+    for strat in res["strategies"]:
+        assert strat["crops"][0] in ("Rape & Mustard", "Mustard")
+
+    # Test 2: When both Rabi and Kharif-1 are planted
+    res2 = engine.recommend("Rajshahi", True, "medium", ("Mustard", "Jute", "auto"), [])
+    assert res2["inputs"]["planted_seasons"] == {"rabi": "Mustard", "kharif1": "Jute"}
+    for strat in res2["strategies"]:
+        assert strat["crops"][0] in ("Rape & Mustard", "Mustard")
+        assert strat["crops"][1] == "Jute"
+
+    # Test 3: Unconstrained when None
+    res3 = engine.recommend("Rajshahi", True, "medium", None, [])
+    assert res3["inputs"]["planted_seasons"] == {}
+

@@ -135,6 +135,7 @@ export interface Recommendation {
     irrigation_was_default: boolean
     soil_fertility: Exclude<SoilLevel, 'unknown'>
     current_crops: Record<SeasonKey, string>
+    planted_seasons?: Partial<Record<SeasonKey, string>>
     excluded_crops: string[]
   }
   strategies: StrategyCard[]

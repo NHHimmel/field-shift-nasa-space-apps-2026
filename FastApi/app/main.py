@@ -33,9 +33,9 @@ Priority = Literal["balanced", "water_conservation", "soil_health", "high_value_
 
 
 class SeasonCrops(BaseModel):
-    rabi: str
-    kharif1: str
-    kharif2: str
+    rabi: Optional[str] = "auto"
+    kharif1: Optional[str] = "auto"
+    kharif2: Optional[str] = "auto"
 
 
 class RecommendRequest(BaseModel):
@@ -57,8 +57,15 @@ def _run(req: RecommendRequest) -> dict:
         raise HTTPException(404, f"Unknown district '{req.district}'")
     current = None
     if req.current_crops is not None:
-        current = (req.current_crops.rabi, req.current_crops.kharif1, req.current_crops.kharif2)
-    bad = [c for c in (current or ()) + tuple(req.excluded_crops) if not engine.is_known_crop(c)]
+        current = (
+            req.current_crops.rabi or "auto",
+            req.current_crops.kharif1 or "auto",
+            req.current_crops.kharif2 or "auto",
+        )
+    bad = [
+        c for c in (current or ()) + tuple(req.excluded_crops)
+        if c and c not in ("auto", "none", "") and not engine.is_known_crop(c)
+    ]
     if bad:
         raise HTTPException(422, f"Unknown crop(s): {', '.join(sorted(set(bad)))}")
     return engine.recommend(

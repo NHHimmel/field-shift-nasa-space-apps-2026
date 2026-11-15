@@ -21,7 +21,7 @@ export function RefineForm({ req, meta, names }: { req: RecommendRequest; meta: 
     return [...all]
   }, [meta])
 
-  const currentValue = (s: SeasonKey) => current?.[s] ?? meta?.default_current_crops[s] ?? ''
+  const currentValue = (s: SeasonKey) => current?.[s] ?? 'auto'
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -49,9 +49,17 @@ export function RefineForm({ req, meta, names }: { req: RecommendRequest; meta: 
               <select
                 id={`f-cur-${s}`}
                 value={currentValue(s)}
-                onChange={(e) => setCurrent({ ...(current ?? meta!.default_current_crops), [s]: e.target.value })}
+                onChange={(e) =>
+                  setCurrent({
+                    rabi: current?.rabi ?? 'auto',
+                    kharif1: current?.kharif1 ?? 'auto',
+                    kharif2: current?.kharif2 ?? 'auto',
+                    [s]: e.target.value,
+                  })
+                }
                 disabled={!meta}
               >
+                <option value="auto">{t('refine.unplanted')}</option>
                 {(meta?.season_crops[s] ?? []).map((c) => <option key={c} value={c}>{names.crop(c)}</option>)}
               </select>
             </div>

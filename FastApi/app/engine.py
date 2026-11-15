@@ -341,6 +341,40 @@ def _filter_pool(pool: List[Tuple[int, int, int]], excluded_ids: set) -> List[Tu
     return filtered or pool
 
 
+def _build_pools(
+    current: Tuple[str, str, str],
+    excluded_ids: set,
+) -> Dict[str, List[Tuple[int, int, int]]]:
+    pools = {}
+    for pool_name in ("core", "veg"):
+        map_key = "core" if pool_name == "core" else "vegetable"
+
+        # Season 0 (Rabi)
+        if current[0] and current[0] not in ("auto", "none", ""):
+            r_c = [rl.CROP_NAME_TO_ID[current[0]]]
+        else:
+            r_c = rl.MODE_SEASON_ACTION_MAP[map_key][0]
+
+        # Season 1 (Kharif-1)
+        if current[1] and current[1] not in ("auto", "none", ""):
+            k1_c = [rl.CROP_NAME_TO_ID[current[1]]]
+        else:
+            k1_c = rl.MODE_SEASON_ACTION_MAP[map_key][1]
+
+        # Season 2 (Kharif-2)
+        if current[2] and current[2] not in ("auto", "none", ""):
+            k2_c = [rl.CROP_NAME_TO_ID[current[2]]]
+        else:
+            k2_c = rl.MODE_SEASON_ACTION_MAP[map_key][2]
+
+        r_ok = [c for c in r_c if (current[0] and current[0] not in ("auto", "none", "")) or c not in excluded_ids] or r_c
+        k1_ok = [c for c in k1_c if (current[1] and current[1] not in ("auto", "none", "")) or c not in excluded_ids] or k1_c
+        k2_ok = [c for c in k2_c if (current[2] and current[2] not in ("auto", "none", "")) or c not in excluded_ids] or k2_c
+
+        pools[pool_name] = [(r, k1, k2) for r in r_ok for k1 in k1_ok for k2 in k2_ok]
+    return pools
+
+
 def _best(farm, climates, pool, mode, daily_seqs=None) -> Dict[str, Any]:
     evals = [rl.evaluate_rotation_trajectory(farm, climates, path, mode, daily_seqs) for path in pool]
     return max(evals, key=lambda e: e["cumulative_reward"])
@@ -369,13 +403,16 @@ def _compute(
         district_name=district,
     )
 
-    baseline_ids = tuple(rl.CROP_NAME_TO_ID[c] for c in current)
+    base_rabi = current[0] if current[0] and current[0] not in ("auto", "none", "") else DEFAULT_BASELINE[0]
+    base_k1 = current[1] if current[1] and current[1] not in ("auto", "none", "") else DEFAULT_BASELINE[1]
+    base_k2 = current[2] if current[2] and current[2] not in ("auto", "none", "") else DEFAULT_BASELINE[2]
+    baseline_ids = (
+        rl.CROP_NAME_TO_ID[base_rabi],
+        rl.CROP_NAME_TO_ID[base_k1],
+        rl.CROP_NAME_TO_ID[base_k2],
+    )
     excluded_ids = {rl.CROP_NAME_TO_ID[c] for c in excluded}
-    core_pool, veg_pool = rl._get_candidate_pools()
-    pools = {
-        "core": _filter_pool(core_pool, excluded_ids),
-        "veg": _filter_pool(veg_pool, excluded_ids),
-    }
+    pools = _build_pools(current, excluded_ids)
 
     # --- Current-climate strategies (with 20-year NASA uncertainty band) ---
     base_ev = rl.evaluate_rotation_trajectory(farm, climates, baseline_ids, "balanced", daily_seqs)
@@ -423,6 +460,11 @@ def _compute(
             "irrigation": irrigation,
             "soil_fertility": fertility,
             "current_crops": dict(zip(SEASON_KEYS, current)),
+            "planted_seasons": {
+                s: current[i]
+                for i, s in enumerate(SEASON_KEYS)
+                if current[i] and current[i] not in ("auto", "none", "")
+            },
             "excluded_crops": list(excluded),
         },
         "strategies": strategies,
@@ -454,7 +496,7 @@ def recommend(
     loc = _DISTRICTS[district]
     irr = bool(loc.irrigation_access) if irrigation is None else bool(irrigation)
     fert = soil_fertility if soil_fertility in FERTILITY_PRESETS else "medium"
-    current = tuple(current_crops) if current_crops else DEFAULT_BASELINE
+    current = tuple(current_crops) if current_crops else ("auto", "auto", "auto")
     excluded = tuple(sorted(set(excluded_crops)))
     result = _compute(district, irr, fert, current, excluded)
     return {**result, "inputs": {**result["inputs"], "irrigation_was_default": irrigation is None}}

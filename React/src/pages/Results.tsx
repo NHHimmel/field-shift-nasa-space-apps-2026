@@ -128,7 +128,7 @@ export default function Results() {
 
       <section className="card plan">
         <h2>{strategy === 'baseline' ? t('res.currentTitle') : t('res.planTitle')}</h2>
-        <SeasonTiles card={card} names={names} />
+        <SeasonTiles card={card} names={names} plantedSeasons={data.inputs.planted_seasons} />
         <StatTiles card={card} />
       </section>
 

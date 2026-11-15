@@ -229,7 +229,10 @@ const en = {
   'footer.site': 'Site',
   'refine.title': 'Refine this plan',
   'refine.p': 'Add your soil, the crops you grow now and any crops to leave out. The plan and its link update together.',
+  'refine.unplanted': '✨ Not yet planted (Plan this season)',
   'refine.submit': 'Update my plan',
+  'plan.planted': 'Planted',
+  'plan.recommended': 'Recommended',
 
   'loc.title': 'District Location & Agro-Ecological Zone',
   'loc.aez': 'Agro-Ecological Zone',
@@ -513,7 +516,10 @@ const bn: Record<StringKey, string> = {
   'footer.site': 'সাইট',
   'refine.title': 'এই পরিকল্পনা আরও ঠিক করুন',
   'refine.p': 'আপনার মাটি, এখনকার ফসল এবং যে ফসল বাদ দিতে চান তা যোগ করুন। পরিকল্পনা ও তার লিংক একসাথে বদলাবে।',
+  'refine.unplanted': '✨ এখনও রোপণ করা হয়নি (সুপারিশ করুন)',
   'refine.submit': 'পরিকল্পনা হালনাগাদ করুন',
+  'plan.planted': 'রোপিত',
+  'plan.recommended': 'প্রস্তাবিত',
 
   'loc.title': 'জেলার অবস্থান ও কৃষি-পরিবেশগত অঞ্চল',
   'loc.aez': 'কৃষি-পরিবেশগত অঞ্চল (AEZ)',
