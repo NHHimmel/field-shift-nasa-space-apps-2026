@@ -32,4 +32,5 @@ FastApi/data/
 
 # Local database and generated seed payload
 *.db
+!field_shift_bangladesh.db
 field_shift_64_districts_payload.json

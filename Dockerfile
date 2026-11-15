@@ -32,6 +32,9 @@ COPY data/ ./data/
 COPY artifacts/ ./artifacts/
 COPY field_shift_bangladesh.db ./
 
+# Ensure data cache directory exists for NASA weather cache
+RUN mkdir -p data/cache
+
 # Copy built frontend from Stage 1 into React/dist
 COPY --from=frontend-builder /app/React/dist ./React/dist
 
